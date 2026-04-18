@@ -1,0 +1,220 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Bot, Target, Sparkles, X, Loader2, Save } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { generateSimulationScenario } from '../lib/ai';
+
+export default function SimulationsManagement() {
+  const [simulations, setSimulations] = useState([]);
+  const [loadingList, setLoadingList] = useState(true);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [ideaPrompt, setIdeaPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedSim, setGeneratedSim] = useState(null);
+  const [errorObj, setErrorObj] = useState(null);
+
+  async function fetchSimulations() {
+    setLoadingList(true);
+    const { data, error } = await supabase.from('simulations').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+       setSimulations(data);
+    }
+    setLoadingList(false);
+  }
+
+  useEffect(() => {
+    fetchSimulations();
+  }, []);
+
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    if (!ideaPrompt) return;
+    
+    setIsGenerating(true);
+    setErrorObj(null);
+    try {
+      const data = await generateSimulationScenario(ideaPrompt);
+      setGeneratedSim(data);
+    } catch (err) {
+      setErrorObj(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const saveSimulation = async () => {
+    setIsGenerating(true); // Reusamos el estado de carga para el botón de guardado
+    
+    const { error } = await supabase.from('simulations').insert({
+      title: generatedSim.title,
+      scenario_description: ideaPrompt,
+      role_target: generatedSim.role,
+      ai_persona: generatedSim.persona,
+      evaluation_criteria: generatedSim.evaluation_criteria_arr,
+      reward_xp: generatedSim.xp
+    });
+    
+    setIsGenerating(false);
+    
+    if (!error) {
+       setIsModalOpen(false);
+       setIdeaPrompt("");
+       setGeneratedSim(null);
+       fetchSimulations(); // Recargamos grid
+    } else {
+       setErrorObj(error.message);
+    }
+  };
+
+  return (
+    <>
+      <div className="animate-fade-in relative">
+        <div className="header-action">
+        <div>
+          <h1 className="text-gradient">Simulador Inteligente</h1>
+          <p className="text-muted" style={{ marginTop: '4px' }}>Crea escenarios de roleplay avanzados con OpenAI</p>
+        </div>
+        <button onClick={() => { setIsModalOpen(true); setGeneratedSim(null); setIdeaPrompt(''); setErrorObj(null); }} className="btn-primary" style={{ background: 'linear-gradient(135deg, #00f0ff, #ff0055)' }}>
+          <Sparkles size={18} /> Crear con IA
+        </button>
+      </div>
+
+      {loadingList ? (
+         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+              <Loader2 className="animate-spin text-accent-primary" size={32} style={{ margin: '0 auto 12px auto', animation: 'spin 1s linear infinite' }} />
+              <p>Buscando escenarios almacenados en la nube...</p>
+         </div>
+      ) : simulations.length === 0 ? (
+         <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              <Bot size={48} style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
+              <p>Aún no has creado simulaciones virtuales. ¡Crea la primera con Inteligencia Artificial!</p>
+         </div>
+      ) : (
+        <div className="grid grid-2">
+           {simulations.map(sim => (
+               <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'rgba(112, 0, 255, 0.2)', borderRadius: '12px', display: 'grid', placeItems: 'center' }}>
+                           <Bot size={24} color="var(--accent-secondary)"/>
+                        </div>
+                        <div>
+                           <h3 style={{ fontSize: '1.2rem' }}>{sim.title}</h3>
+                           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2px' }}>Rol: {sim.role_target}</p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Actitud del Cliente IA:</div>
+                     <div style={{ fontWeight: 600 }}>{sim.ai_persona}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                     <div>
+                       <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Criterios a Evaluar:</div>
+                       <ul style={{ fontSize: '0.85rem', color: 'var(--text-main)', paddingLeft: '16px', margin: 0 }}>
+                         {(sim.evaluation_criteria || []).map((c, i) => <li key={i}>{c}</li>)}
+                       </ul>
+                     </div>
+                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <Target size={16} color="var(--accent-primary)"/>
+                        <span style={{ fontSize: '0.9rem' }}><strong style={{ color: 'var(--accent-primary)' }}>{sim.reward_xp} XP</strong></span>
+                     </div>
+                  </div>
+               </div>
+           ))}
+        </div>
+      )}
+
+      </div>
+
+      {/* Modal / Panel Superpuesto Generador IA */}
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 100,
+          display: 'grid', placeItems: 'center', padding: '16px'
+        }}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '600px', background: 'var(--bg-dark)', padding: 0, overflow: 'hidden' }}>
+             
+             {/* Header */}
+             <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <Bot color="var(--accent-primary)" /> Forjar Escenario
+                </h2>
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                  <X />
+                </button>
+             </div>
+
+             {/* Body */}
+             <div style={{ padding: '24px' }}>
+                {!generatedSim ? (
+                  <form onSubmit={handleGenerate}>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
+                      Escribe la idea. La IA se encargará de crear el rol, el puntaje y los criterios de evaluación.
+                    </p>
+                    <div className="input-group">
+                       <input 
+                         type="text" 
+                         className="input-field" 
+                         value={ideaPrompt}
+                         onChange={(e)=>setIdeaPrompt(e.target.value)}
+                         placeholder="Ej: Turista ruso entra buscando guantes de trekking para la nieve..." 
+                         required
+                         autoFocus
+                       />
+                    </div>
+                    {errorObj && <p style={{ color: 'var(--accent-danger)', marginBottom: '16px', fontSize: '0.9rem' }}>{errorObj}</p>}
+                    
+                    <button type="submit" className="btn-primary" disabled={isGenerating} style={{ width: '100%' }}>
+                      {isGenerating ? <Loader2 className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={18}/>}
+                      {isGenerating ? ' Procesando en OpenAI...' : ' Generar con IA'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="animate-fade-in">
+                    <h3 style={{ fontSize: '1.4rem', color: 'var(--accent-primary)', marginBottom: '8px' }}>{generatedSim.title}</h3>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                       <span className="badge warning">Rol: {generatedSim.role}</span>
+                       <span className="badge primary">{generatedSim.xp} XP Recompensa</span>
+                    </div>
+
+                    <div style={{ marginBottom: '24px', padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                       <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>Arquetipo Persona:</strong>
+                       <p>{generatedSim.persona}</p>
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                       <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>Métricas de Evaluación:</strong>
+                       <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                         {generatedSim.evaluation_criteria_arr?.map((c, i) => (
+                           <li key={i}>{c}</li>
+                         ))}
+                       </ul>
+                    </div>
+                    {errorObj && <p style={{ color: 'var(--accent-danger)', marginBottom: '16px', fontSize: '0.9rem' }}>{errorObj}</p>}
+
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                       <button onClick={saveSimulation} disabled={isGenerating} className="btn-primary" style={{ flex: 1 }}>
+                         {isGenerating ? <Loader2 className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={18}/>}
+                         {isGenerating ? ' Guardando...' : ' Guardar en Nube'}
+                       </button>
+                       <button onClick={() => setGeneratedSim(null)} className="btn-secondary" disabled={isGenerating}>
+                         Descartar
+                       </button>
+                    </div>
+                  </div>
+                )}
+             </div>
+
+             <style>{`
+               @keyframes spin { 100% { transform: rotate(360deg); } }
+             `}</style>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

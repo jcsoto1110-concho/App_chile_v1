@@ -1,0 +1,150 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../../lib/AuthContext';
+
+export default function MobileHome() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [challenges, setChallenges] = useState([]);
+  const [progressLog, setProgressLog] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchActive() {
+       const today = new Date().toISOString().split('T')[0];
+       // Traer retos de hoy o anteriores que estén activos
+       const { data } = await supabase
+          .from('daily_challenges')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+       
+       if (data) setChallenges(data);
+
+       if (profile?.id && data) {
+           const { data: prog } = await supabase.from('user_progress').select('*').eq('user_id', profile.id);
+           const pLog = {};
+           prog?.forEach(p => pLog[p.challenge_id] = p.score === 0 ? 'failed' : 'completed');
+           
+           // --------- MOTOR DE PENALIZACIÓN AUTÓNOMO ---------
+           const todayRaw = new Date().toISOString().split('T')[0];
+           const overdueInserts = [];
+           let penaltiesAmount = 0;
+
+           data.forEach(ch => {
+               if (ch.end_date && ch.end_date < todayRaw && !pLog[ch.id]) {
+                   // Expiró y no tenía completado -> Castigo
+                   overdueInserts.push({ user_id: profile.id, challenge_id: ch.id, score: 0 });
+                   penaltiesAmount += 100;
+                   pLog[ch.id] = 'failed'; // Actualizar el mapa que veremos en la app
+               }
+           });
+
+           if (overdueInserts.length > 0) {
+               await supabase.from('user_progress').insert(overdueInserts);
+               const finalCoins = (profile.fitcoins || 0) - penaltiesAmount;
+               await supabase.from('profiles').update({ fitcoins: finalCoins }).eq('id', profile.id);
+               profile.fitcoins = finalCoins; // mutación local para UI instantánea
+           }
+           // ----------------------------------------------------
+
+           setProgressLog(pLog);
+       }
+
+       setLoading(false);
+    }
+    fetchActive();
+  }, [profile]);
+
+  return (
+    <div className="animate-fade-in" style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+         <div>
+            <p className="text-muted" style={{ fontSize: '0.85rem' }}>Hola, {profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</p>
+            <h1 style={{ fontSize: '1.5rem', margin: 0 }} className="text-gradient">Tus Misiones</h1>
+         </div>
+         <div style={{ background: 'rgba(255, 175, 0, 0.1)', padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+             <span style={{ fontSize: '1rem' }}>⚡</span>
+             <strong style={{ color: 'var(--accent-warning)', fontSize: '0.9rem' }}>{profile?.fitcoins || 0} FC</strong>
+         </div>
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+         <h2 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Misión del Día</h2>
+         <div style={{ 
+            background: 'linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(112,0,255,0.15) 100%)', 
+            border: '1px solid var(--accent-primary)',
+            borderRadius: '20px', 
+            padding: '24px',
+            position: 'relative',
+            overflow: 'hidden'
+         }}>
+            <Target size={40} color="var(--accent-primary)" style={{ opacity: 0.2, position: 'absolute', right: '-10px', top: '-10px', transform: 'scale(3)' }} />
+            <span className="badge primary" style={{ marginBottom: '12px', display: 'inline-block' }}>Prioridad Alta</span>
+            <h3 style={{ fontSize: '1.3rem', marginBottom: '8px' }}>Simulador Activo</h3>
+            <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.4 }}>
+               El gerente ha publicado un caso de atención a turista para que lo resuelvas hoy.
+            </p>
+            <button onClick={() => navigate('/app/simulator')} className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '8px' }}>
+               <Play fill="currentColor" size={16} /> Entrar al Simulador
+            </button>
+         </div>
+      </div>
+
+      <div>
+         <h2 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Módulos Teóricos</h2>
+         {loading ? (
+             <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                <Loader2 className="animate-spin text-accent-primary" size={24} style={{ margin: '0 auto 12px auto' }} />
+             </div>
+         ) : challenges.length === 0 ? (
+             <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '16px', padding: '24px', textAlign: 'center' }}>
+                <p className="text-muted">No tienes contenido pendiente.</p>
+             </div>
+         ) : (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                 {challenges.map(ch => {
+                    const status = progressLog[ch.id];
+                    
+                    return (
+                       <div key={ch.id} style={{ 
+                          background: 'rgba(0,0,0,0.4)', 
+                          border: '1px solid rgba(255,255,255,0.05)',
+                          borderRadius: '16px', 
+                          padding: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          opacity: status ? 0.6 : 1
+                       }}>
+                          <div style={{ flex: 1 }}>
+                             <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{ch.title}</div>
+                             <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem' }}>
+                                <span style={{ color: 'var(--accent-warning)' }}>+{ch.reward_fitcoins} FC</span>
+                                <span style={{ color: 'var(--accent-primary)' }}>+{ch.reward_xp} XP</span>
+                             </div>
+                          </div>
+                          
+                          {status === 'completed' ? (
+                             <div style={{ color: '#00ff64', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}><CheckCircle size={16}/> Hecho</div>
+                          ) : status === 'failed' ? (
+                             <div style={{ color: '#ff3232', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}><XCircle size={16}/> Reprobado</div>
+                          ) : (
+                             <button 
+                                onClick={() => navigate('/app/quiz', { state: { challenge: ch } })} 
+                                style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.1)', outline: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                             >
+                                 <ChevronRight size={18} />
+                             </button>
+                          )}
+                       </div>
+                    )
+                 })}
+             </div>
+         )}
+      </div>
+    </div>
+  );
+}
