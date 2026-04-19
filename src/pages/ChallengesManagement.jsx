@@ -23,6 +23,8 @@ export default function ChallengesManagement() {
     reward_fitcoins: 5,
     active_date: todayRaw,
     end_date: todayRaw,
+    is_flash: false,
+    is_live: false,
     quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
   });
 
@@ -65,6 +67,8 @@ export default function ChallengesManagement() {
        reward_fitcoins: parseInt(formData.reward_fitcoins) || 5,
        active_date: formData.active_date,
        end_date: formData.end_date,
+       is_flash: formData.is_flash,
+       is_live: formData.is_live,
        quiz_data: quizData
     });
 
@@ -75,6 +79,7 @@ export default function ChallengesManagement() {
        setFormData({
           title: '', description: '', content_url: '',  
           role_target: '', reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
+          is_flash: false, is_live: false,
           quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
        });
        fetchChallenges();
@@ -219,6 +224,34 @@ export default function ChallengesManagement() {
                            required
                         />
                      </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px' }}>
+                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input 
+                           type="checkbox" 
+                           checked={formData.is_flash}
+                           onChange={(e)=>setFormData({...formData, is_flash: e.target.checked})}
+                           style={{ width: '20px', height: '20px', accentColor: 'var(--accent-primary)' }}
+                        />
+                        <div>
+                           <div style={{ fontWeight: 'bold' }}>⚡ Trivia Exprés (Con Tiempo)</div>
+                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>El celular castigará al asesor dándole solo 20s para decidir.</div>
+                        </div>
+                     </label>
+
+                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input 
+                           type="checkbox" 
+                           checked={formData.is_live}
+                           onChange={(e)=>setFormData({...formData, is_live: e.target.checked})}
+                           style={{ width: '20px', height: '20px', accentColor: '#ff1493' }}
+                        />
+                        <div>
+                           <div style={{ fontWeight: 'bold', color: '#ff1493' }}>🔴 RETO EN VIVO (Alerta Interrumptora)</div>
+                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Se apoderará forzosamente de las pantallas de la tienda instantáneamente.</div>
+                        </div>
+                     </label>
                   </div>
 
                   {/* ZONA DE QUIZ DE EVALUACIÓN MÚLTIPLE */}

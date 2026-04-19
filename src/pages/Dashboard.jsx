@@ -7,6 +7,11 @@ export default function Dashboard() {
   const [stores, setStores] = useState([]);
   const [topProfiles, setTopProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // States para Carga Masiva
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const [bulkLog, setBulkLog] = useState('');
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -49,6 +54,99 @@ export default function Dashboard() {
     fetchDashboard();
   }, []);
 
+  const handleUpdateKPI = async (storeId) => {
+     const store = stores.find(s => s.id === storeId);
+     const goal = prompt("Ingresa la META DE VENTAS (Ej: 1000000):", store?.monthly_sales_goal || "1000000");
+     const current = prompt("Ingresa la VENTA ACTUAL (Ej: 500000):", store?.current_sales || "500000");
+     
+     if (goal && current) {
+         setLoading(true);
+         const numGoal = parseInt(goal);
+         const numCurrent = parseInt(current);
+
+         await supabase.from('stores').update({
+             monthly_sales_goal: numGoal,
+             current_sales: numCurrent 
+         }).eq('id', storeId);
+
+         // Lógica del Motor Lluvia de FitCoins (Cruce de límite)
+         const wasBelow = (!store?.current_sales || !store?.monthly_sales_goal) || (store.current_sales < store.monthly_sales_goal);
+         const isAbove = numCurrent >= numGoal;
+
+         if (wasBelow && isAbove) {
+             const { data: employees } = await supabase.from('profiles').select('id, fitcoins').eq('store_id', storeId);
+             if (employees && employees.length > 0) {
+                 const updates = employees.map(emp => 
+                    supabase.from('profiles').update({ fitcoins: (emp.fitcoins || 0) + 150 }).eq('id', emp.id)
+                 );
+                 await Promise.all(updates);
+                 alert(`🎉 ¡META CRUZADA! Lluvia de Recompensas activada.\nSe han transferido +150 FitCoins automáticamente a las cuentas de los ${employees.length} empleados de esta tienda.`);
+             }
+         }
+
+         window.location.reload();
+     }
+  };
+
+  const handleBulkUpload = async () => {
+      if (!bulkText.trim()) return;
+      setLoading(true);
+      setBulkLog('Procesando datos desde el portapapeles...\n');
+      
+      const rows = bulkText.split('\n');
+      let successCount = 0;
+      let errorCount = 0;
+      let rewardCount = 0;
+
+      for (let i = 0; i < rows.length; i++) {
+          const row = rows[i].trim();
+          if (!row) continue;
+          
+          // La separación por defecto al pegar desde Excel es tabulación (\t)
+          const cols = row.split('\t');
+          if (cols.length < 3) {
+             errorCount++;
+             continue; // Ignorar filas rotas o mal pegadas
+          }
+
+          const rawStoreName = cols[0].trim();
+          const goal = parseInt(cols[1].toString().replace(/\D/g, '')); // Remover formatos de moneda $ o puntos 
+          const current = parseInt(cols[2].toString().replace(/\D/g, ''));
+
+          // Empatar nombre exacto (case-insensitive)
+          const store = stores.find(s => s.name.toLowerCase().trim() === rawStoreName.toLowerCase());
+
+          if (store && !isNaN(goal) && !isNaN(current)) {
+              // 1. Guardar Nuevas Cifras
+              await supabase.from('stores').update({
+                  monthly_sales_goal: goal,
+                  current_sales: current 
+              }).eq('id', store.id);
+              
+              // 2. Lógica Lluvia Monedas!
+              const wasBelow = (!store.current_sales || !store.monthly_sales_goal) || (store.current_sales < store.monthly_sales_goal);
+              const isAbove = current >= goal;
+
+              if (wasBelow && isAbove) {
+                  const { data: employees } = await supabase.from('profiles').select('id, fitcoins').eq('store_id', store.id);
+                  if (employees && employees.length > 0) {
+                      const updates = employees.map(emp => 
+                         supabase.from('profiles').update({ fitcoins: (emp.fitcoins || 0) + 150 }).eq('id', emp.id)
+                      );
+                      await Promise.all(updates);
+                      rewardCount++;
+                  }
+              }
+              successCount++;
+          } else {
+              errorCount++;
+          }
+      }
+      
+      alert(`🎉 Carga Masiva Completada\n\n- Tiendas Actualizadas: ${successCount}\n- Tiendas que cruzaron meta ahora y ganaron bonos: ${rewardCount}\n- Errores/Ignorados: ${errorCount}`);
+      window.location.reload();
+  };
+
   if (loading) {
      return <div style={{ display: 'grid', placeItems: 'center', height: '60vh', color: 'var(--accent-primary)' }}><Loader2 size={40} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /></div>;
   }
@@ -90,7 +188,10 @@ export default function Dashboard() {
 
       <div className="grid grid-2">
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h2 style={{ marginBottom: '24px' }}>Tiendas Activas</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+             <h2 style={{ margin: 0 }}>Ranking Tiendas Activas</h2>
+             <button onClick={() => setIsBulkOpen(true)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Excel Básico (Masivo)</button>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {stores.length === 0 ? <p className="text-muted">Aún no hay tiendas creadas en DB</p> : null}
             {stores.map((store, i) => (
@@ -105,7 +206,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                   <button onClick={() => handleUpdateKPI(store.id)} style={{ background: 'transparent', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                       Fijar KPI
+                   </button>
                    <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
                       <span style={{ color: 'var(--accent-warning)', fontWeight: 600 }}>{store.fc} FC</span>
                       <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{store.xp} XP</span>
@@ -142,6 +246,45 @@ export default function Dashboard() {
            </div>
         </div>
       </div>
+
+      {isBulkOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '700px', background: 'var(--bg-dark)', padding: '32px', display: 'flex', flexDirection: 'column' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '1.4rem', color: '#00f0ff' }}>Ingesta Masiva desde Excel</h2>
+                <button onClick={() => setIsBulkOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+             </div>
+
+             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', marginBottom: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                 <strong>¿Cómo funciona?</strong><br/>
+                 Ve a tu Excel. Sombrea las filas que contengan estas 3 columnas en orden estricto: <br/>
+                 <code style={{background: '#000', padding: '4px', borderRadius: '4px'}}>NOMBRE DE TIENDA</code> | <code style={{background: '#000', padding: '4px', borderRadius: '4px'}}>META MENSUAL</code> | <code style={{background: '#000', padding: '4px', borderRadius: '4px'}}>LO VENDIDO</code><br/>
+                 Márcalo todo, dale a <b>Copiar (Ctrl+C)</b>, pon tu cursor aquí abajo, y dale <b>Pegar (Ctrl+V)</b>.
+             </div>
+             
+             <textarea 
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                placeholder="Pega las celdas desde Excel aquí..."
+                style={{ 
+                    width: '100%', height: '200px', background: 'var(--bg-card)', 
+                    border: '1px solid var(--accent-primary)', borderRadius: '12px', 
+                    padding: '16px', color: '#fff', fontSize: '0.9rem',
+                    fontFamily: 'monospace', resize: 'vertical', marginBottom: '24px'
+                }}
+             />
+
+             <button onClick={handleBulkUpload} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '1.1rem' }}>
+                🚀 Procesar y Repartir Bonos
+             </button>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
     </div>
   );

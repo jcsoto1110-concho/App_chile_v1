@@ -18,6 +18,29 @@ export default function MobileQuiz() {
   const [scoreCount, setScoreCount] = useState(0);
   const [earnedStats, setEarnedStats] = useState({ xp: 0, fc: 0 });
   const [isLocked, setIsLocked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(20);
+
+  // Timer para Trivia Exprés
+  React.useEffect(() => {
+     if (!challenge?.is_flash || resultStatus !== null || isProcessing || examPassed || isLocked) return;
+     
+     const timer = setInterval(() => {
+        setTimeLeft(prev => {
+            if (prev <= 1) {
+               clearInterval(timer);
+               handleSelect(-1); // Falla forzosamente por falta de tiempo
+               return 0;
+            }
+            return prev - 1;
+        });
+     }, 1000);
+
+     return () => clearInterval(timer);
+  }, [currentIndex, challenge?.is_flash, resultStatus, isProcessing, examPassed, isLocked]);
+
+  React.useEffect(() => {
+      setTimeLeft(20);
+  }, [currentIndex]);
 
   // Escudo Protector: Revisar si este usuario ya cursó este examen para bloquar trampas
   React.useEffect(() => {
@@ -153,7 +176,10 @@ export default function MobileQuiz() {
                  
                  <h3 style={{ fontSize: '0.9rem', marginBottom: '8px', color: 'var(--accent-primary)', display: 'flex', justifyContent: 'space-between' }}>
                     <span>Test de Comprensión</span>
-                    {quizArray && <span>{currentIndex + 1} / {quizArray.length}</span>}
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        {challenge.is_flash && <span style={{ color: timeLeft <= 5 ? '#ff3232' : 'var(--accent-warning)', fontWeight: 'bold' }}>⏱️ {timeLeft}s</span>}
+                        {quizArray && <span>{currentIndex + 1} / {quizArray.length}</span>}
+                    </div>
                  </h3>
                  <p style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 500, lineHeight: 1.4 }}>
                     {currentQuiz ? currentQuiz.question : 'Para aprobar este reto, marca "Entendido".'}
@@ -207,7 +233,7 @@ export default function MobileQuiz() {
 
                  {resultStatus === 'error' && (
                     <div className="animate-fade-in" style={{ marginTop: '24px', textAlign: 'center' }}>
-                        <p style={{ color: '#ff3232', fontSize: '0.9rem' }}>Incorrecto. Saltando a la siguiente...</p>
+                        <p style={{ color: '#ff3232', fontSize: '0.9rem' }}>{selectedOption === -1 ? '¡Se agotó el tiempo!' : 'Incorrecto.'} Saltando a la siguiente...</p>
                     </div>
                  )}
               </div>

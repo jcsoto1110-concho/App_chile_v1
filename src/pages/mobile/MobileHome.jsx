@@ -9,6 +9,7 @@ export default function MobileHome() {
   const navigate = useNavigate();
   const [challenges, setChallenges] = useState([]);
   const [progressLog, setProgressLog] = useState({});
+  const [storeKpi, setStoreKpi] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +52,10 @@ export default function MobileHome() {
            // ----------------------------------------------------
 
            setProgressLog(pLog);
+
+           // Extraer KPI de la tienda actual
+           const { data: storeInfo } = await supabase.from('stores').select('*').eq('id', profile.store_id).single();
+           if (storeInfo) setStoreKpi(storeInfo);
        }
 
        setLoading(false);
@@ -60,7 +65,7 @@ export default function MobileHome() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
          <div>
             <p className="text-muted" style={{ fontSize: '0.85rem' }}>Hola, {profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</p>
             <h1 style={{ fontSize: '1.5rem', margin: 0 }} className="text-gradient">Tus Misiones</h1>
@@ -70,6 +75,22 @@ export default function MobileHome() {
              <strong style={{ color: 'var(--accent-warning)', fontSize: '0.9rem' }}>{profile?.fitcoins || 0} FC</strong>
          </div>
       </div>
+
+      {storeKpi && storeKpi.monthly_sales_goal > 0 && (
+         <div style={{ marginBottom: '32px' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                 <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Meta Sucursal: {storeKpi.name}</span>
+                 <span style={{ fontSize: '0.9rem', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{Math.round(((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%</span>
+             </div>
+             <div style={{ background: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                 <div style={{ background: 'linear-gradient(90deg, var(--accent-primary), #00ff64)', width: `${Math.min(100, ((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%`, height: '100%', borderRadius: '4px' }}></div>
+             </div>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                 <span>Llevan: ${(storeKpi.current_sales || 0).toLocaleString()}</span>
+                 <span>Faltan: ${(storeKpi.monthly_sales_goal - (storeKpi.current_sales || 0)).toLocaleString()}</span>
+             </div>
+         </div>
+      )}
 
       <div style={{ marginBottom: '24px' }}>
          <h2 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Misión del Día</h2>
