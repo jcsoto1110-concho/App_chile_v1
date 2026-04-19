@@ -43,7 +43,7 @@ Necesito que devuelvas la estructura de esta simulación estrictamente en el sig
     return result;
   } catch (error) {
     console.error("OpenAI Error:", error);
-    throw new Error("No se pudo generar con IA en este momento.");
+    throw new Error(`OpenAI Error: ${error.message}`);
   }
 }
 
@@ -99,6 +99,6 @@ Formato esperado:
     return result;
   } catch (error) {
     console.error("OpenAI Error (Chat):", error);
-    return { reply: "[Error de red: La Inteligencia no pudo procesar la respuesta. Intenta de nuevo]", completed: false };
+    return { reply: `[AI Error: ${error.message}]. Revisa tu API Key de OpenAI.`, completed: false };
   }
 }
