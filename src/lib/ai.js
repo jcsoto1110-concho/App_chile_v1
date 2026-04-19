@@ -1,18 +1,53 @@
 import OpenAI from 'openai';
 
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const isDev = import.meta.env.DEV;
 
-// Instanciamiento seguro para frontend. 
-// NOTA: Para producción real esto debe estar en un backend (Supabase Edge Function),
-// pero para validar el MVP local se permite en frontend:
+// Modo Local (Escritorio)
 const openai = new OpenAI({
   apiKey: apiKey,
   dangerouslyAllowBrowser: true 
 });
 
-export async function generateSimulationScenario(idea) {
-  if (!apiKey) throw new Error("Falta configurar la llave de OpenAI en el entorno.");
+async function runPrompt(messages) {
+    if (isDev) {
+        // En tu computadora, pasamos directo
+        if (!apiKey) throw new Error("Falta llave de OpenAI local");
+        try {
+            const response = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: messages,
+              temperature: 0.7,
+              response_format: { type: "json_object" }
+            });
+            return JSON.parse(response.choices[0].message.content);
+        } catch (error) {
+            throw new Error(`OpenAI Error Local: ${error.message}`);
+        }
+    } else {
+        // En Vercel, pasamos por la "Aduana Inversa" para burlar los bloqueos CORS del navegador celular
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: messages,
+                temperature: 0.7,
+                response_format: { type: "json_object" }
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+           throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        
+        return JSON.parse(data.choices[0].message.content);
+    }
+}
 
+export async function generateSimulationScenario(idea) {
   const promptText = `
 Eres un creador experto de entrenamientos (roleplay) para vendedores de tiendas de retail deportivo (ej. Marathon Sports).
 El administrador quiere crear una simulación basada en la siguiente idea del cliente: "${idea}".
@@ -21,7 +56,7 @@ Necesito que devuelvas la estructura de esta simulación estrictamente en el sig
 {
   "title": "Nombre llamativo del escenario de simulación",
   "role": "asesor | cajero | bodeguero" (deduce de la idea el más apropiado),
-  "persona": "Descripción súper breve y psicológica de la personalidad del cliente autómata (Ej: 'Padre apurado, busca botines caros pero no entiende de tecnología')",
+  "persona": "Descripción súper breve y psicológica de la personalidad del cliente autómata (Ej: 'Padre apurado, busca botines caros')",
   "xp": (Un valor numérico entre 50 y 150),
   "evaluation_criteria_arr": [
      "Criterio 1 a cumplir para tener nota máxima",
@@ -30,26 +65,10 @@ Necesito que devuelvas la estructura de esta simulación estrictamente en el sig
   ]
 }
 `;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Modelo ultra rápido y económico
-      messages: [{ role: "user", content: promptText }],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    });
-
-    const result = JSON.parse(response.choices[0].message.content);
-    return result;
-  } catch (error) {
-    console.error("OpenAI Error:", error);
-    throw new Error(`OpenAI Error: ${error.message}`);
-  }
+  return await runPrompt([{ role: "user", content: promptText }]);
 }
 
 export async function respondAsCustomer(scenario, messageHistory, userMessage) {
-  if (!apiKey) throw new Error("Falta configurar la llave de OpenAI en el entorno.");
-
   const criteriaList = Array.isArray(scenario.evaluation_criteria) ? scenario.evaluation_criteria.join(", ") : scenario.evaluation_criteria;
 
   const systemPrompt = `
@@ -71,7 +90,6 @@ Formato esperado:
 }
 `;
 
-  // Construir historial en formato OpenAI
   const messages = [
     { role: "system", content: systemPrompt }
   ];
@@ -84,21 +102,12 @@ Formato esperado:
       }
   }
 
-  // Agregar el mensaje nuevo del usuario
   messages.push({ role: "user", content: userMessage });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: messages,
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    });
-
-    const result = JSON.parse(response.choices[0].message.content);
-    return result;
+     return await runPrompt(messages);
   } catch (error) {
-    console.error("OpenAI Error (Chat):", error);
-    return { reply: `[AI Error: ${error.message}]. Revisa tu API Key de OpenAI.`, completed: false };
+     console.error("Vercel/OpenAI Bridge Error:", error);
+     return { reply: `[AI Error: ${error.message}]`, completed: false };
   }
 }
