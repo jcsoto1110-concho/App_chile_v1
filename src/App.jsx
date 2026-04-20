@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import UsersManagement from './pages/UsersManagement';
 import ChallengesManagement from './pages/ChallengesManagement';
 import SimulationsManagement from './pages/SimulationsManagement';
+import RolesConfig from './pages/RolesConfig';
 import Login from './pages/Login';
 
 import MobileHome from './pages/mobile/MobileHome';
@@ -56,6 +57,7 @@ function RouterLogic() {
              <Route path="/users" element={<AppLayout><UsersManagement /></AppLayout>} />
              <Route path="/challenges" element={<AppLayout><ChallengesManagement /></AppLayout>} />
              <Route path="/simulations" element={<AppLayout><SimulationsManagement /></AppLayout>} />
+             <Route path="/roles" element={<AppLayout><RolesConfig /></AppLayout>} />
              <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
            </>
         ) : (

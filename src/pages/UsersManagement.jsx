@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, MoreHorizontal, Loader2, Save, X, UserPlus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getRoles } from '../lib/rolesConfig';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -34,26 +35,10 @@ export default function UsersManagement() {
     const { data: storesData } = await supabase.from('stores').select('*');
     if (storesData) setStores(storesData);
 
-    // Roles desde tabla de configuración (dinámica)
-    const { data: rolesData } = await supabase
-      .from('roles')
-      .select('*')
-      .order('label', { ascending: true });
-
-    if (rolesData && rolesData.length > 0) {
-      setRoles(rolesData);
-      // Asignar el primer rol como default del formulario
-      setFormData(prev => ({ ...prev, role: prev.role || rolesData[0].name }));
-    } else {
-      // Fallback si la tabla roles aún no existe en BD
-      const fallback = [
-        { name: 'asesor', label: 'Asesor de Ventas' },
-        { name: 'cajero', label: 'Cajero' },
-        { name: 'bodeguero', label: 'Bodeguero' },
-      ];
-      setRoles(fallback);
-      setFormData(prev => ({ ...prev, role: prev.role || 'asesor' }));
-    }
+    // Roles desde rolesConfig (localStorage - sin dependencia de Supabase RLS)
+    const configRoles = getRoles();
+    setRoles(configRoles);
+    setFormData(prev => ({ ...prev, role: prev.role || configRoles[0]?.name || 'asesor' }));
 
     setLoading(false);
   }
