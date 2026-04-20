@@ -13,6 +13,9 @@ export default function SimulationsManagement() {
   const [generatedSim, setGeneratedSim] = useState(null);
   const [errorObj, setErrorObj] = useState(null);
 
+  const todayRaw = new Date().toISOString().split('T')[0];
+  const [dates, setDates] = useState({ active_date: todayRaw, end_date: todayRaw });
+
   async function fetchSimulations() {
     setLoadingList(true);
     const { data, error } = await supabase.from('simulations').select('*').order('created_at', { ascending: false });
@@ -51,7 +54,9 @@ export default function SimulationsManagement() {
       role_target: generatedSim.role,
       ai_persona: generatedSim.persona,
       evaluation_criteria: generatedSim.evaluation_criteria_arr,
-      reward_xp: generatedSim.xp
+      reward_xp: generatedSim.xp,
+      active_date: dates.active_date,
+      end_date: dates.end_date
     });
     
     setIsGenerating(false);
@@ -60,6 +65,7 @@ export default function SimulationsManagement() {
        setIsModalOpen(false);
        setIdeaPrompt("");
        setGeneratedSim(null);
+       setDates({ active_date: todayRaw, end_date: todayRaw });
        fetchSimulations(); // Recargamos grid
     } else {
        setErrorObj(error.message);
@@ -194,6 +200,19 @@ export default function SimulationsManagement() {
                          ))}
                        </ul>
                     </div>
+
+                    {/* SECCIÓN FECHAS (NUEVA) */}
+                    <div style={{ display: 'flex', gap: '16px', background: 'rgba(255,100,50,0.1)', padding: '16px', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,100,50,0.2)' }}>
+                       <div className="input-group" style={{ flex: 1, margin: 0 }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Inicio</label>
+                          <input type="date" className="input-field" value={dates.active_date} onChange={e => setDates({...dates, active_date: e.target.value})} />
+                       </div>
+                       <div className="input-group" style={{ flex: 1, margin: 0 }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Cierre (Caducidad)</label>
+                          <input type="date" className="input-field" min={dates.active_date} value={dates.end_date} onChange={e => setDates({...dates, end_date: e.target.value})} required/>
+                       </div>
+                    </div>
+
                     {errorObj && <p style={{ color: 'var(--accent-danger)', marginBottom: '16px', fontSize: '0.9rem' }}>{errorObj}</p>}
 
                     <div style={{ display: 'flex', gap: '16px' }}>

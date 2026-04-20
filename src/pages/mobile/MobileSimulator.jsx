@@ -12,22 +12,45 @@ export default function MobileSimulator() {
   const [inputMsg, setInputMsg] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [rewarding, setRewarding] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [firstAttemptBurned, setFirstAttemptBurned] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     async function loadLatestScenario() {
-       const { data } = await supabase.from('simulations').select('*').order('created_at', { ascending: false }).limit(1);
+       if (!profile?.id) return;
+       const todayRaw = new Date().toISOString().split('T')[0];
+       
+       // Buscar simulaciones VIGENTES
+       const { data } = await supabase.from('simulations')
+           .select('*')
+           .lte('active_date', todayRaw)
+           .gte('end_date', todayRaw)
+           .order('created_at', { ascending: false }).limit(1);
+           
        if (data && data.length > 0) {
-           setScenario(data[0]);
-           setMessages([
-              { sender: 'system', text: `Iniciando escenario: ${data[0].title}` },
-              { sender: 'bot', text: `*El cliente entra a la tienda con actitud: ${data[0].ai_persona}*` },
-              { sender: 'bot', text: '¡Hola! Necesito ayuda por favor. ¿Alguien me puede atender?' }
-           ]);
+           const currentSim = data[0];
+           setScenario(currentSim);
+           
+           // Escudo Protector: ¿Ya quemó su intento?
+           const { data: lockRecord } = await supabase.from('user_simulation_progress')
+               .select('*')
+               .eq('user_id', profile.id)
+               .eq('simulation_id', currentSim.id).maybeSingle();
+               
+           if (lockRecord) {
+               setIsLocked(true);
+           } else {
+               setMessages([
+                  { sender: 'system', text: `Iniciando escenario: ${currentSim.title}. ⚠️ Tienes un solo intento. Al enviar tu primer mensaje se bloquearán los reintentos.` },
+                  { sender: 'bot', text: `*El cliente entra a la tienda con actitud: ${currentSim.ai_persona}*` },
+                  { sender: 'bot', text: '¡Hola! Necesito ayuda por favor. ¿Alguien me puede atender?' }
+               ]);
+           }
        }
     }
     loadLatestScenario();
-  }, []);
+  }, [profile]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -35,10 +58,19 @@ export default function MobileSimulator() {
     
     const userText = inputMsg;
     // Agregamos respuesta del usuario de inmediato en la UI
-    const snapshotHistory = [...messages]; // Lo que existía antes de enviar
+    const snapshotHistory = [...messages]; 
     setMessages(prev => [...prev, { sender: 'user', text: userText }]);
     setInputMsg("");
     setIsTyping(true);
+
+    // QUEMAR INTENTO en base de datos si es la primera letra que manda 💀
+    if (!firstAttemptBurned) {
+        setFirstAttemptBurned(true);
+        await supabase.from('user_simulation_progress').insert({
+            user_id: profile.id,
+            simulation_id: scenario.id
+        }).catch(()=>null); // Fuego y olvido
+    }
     
     // Enviar a Cerebro IA para evaluar la conversación
     const aiResponse = await respondAsCustomer(scenario, snapshotHistory, userText);
@@ -70,7 +102,17 @@ export default function MobileSimulator() {
      setIsCompleted(false); // Quita el botón
   };
 
-  if (!scenario) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando inteligencia artificial...</div>;
+  if (!scenario) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay simulaciones de IA activas o en vigencia. Revisa mañana.</div>;
+
+  if (isLocked) {
+      return (
+         <div className="animate-fade-in" style={{ padding: '60px 40px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+             <Bot size={64} style={{ margin: '0 auto', color: 'var(--accent-danger)' }} />
+             <h2 style={{ color: 'var(--accent-danger)', fontSize: '1.4rem' }}>Acceso Restringido</h2>
+             <p style={{ color: 'var(--text-muted)', lineHeight: '1.5' }}>Tu único intento válido autorizado para este cliente virtual ya ha sido utilizado (o abandonaste la charla en curso). Tu perfil de rendimiento ya registró la eventualidad.</p>
+         </div>
+      );
+  }
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>

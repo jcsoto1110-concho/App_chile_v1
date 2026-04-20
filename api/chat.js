@@ -1,3 +1,9 @@
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
 export default async function handler(req, res) {
   // Manejo de pre-flight / CORS
   if (req.method === 'OPTIONS') {
@@ -11,7 +17,17 @@ export default async function handler(req, res) {
   const apiKey = process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-     return res.status(500).json({ error: 'La API Key VITE_OPENAI_API_KEY no existe en el Servidor de Vercel (Panel Settings).' });
+     return res.status(500).json({ error: 'La API Key VITE_OPENAI_API_KEY no existe en el Servidor de Vercel.' });
+  }
+
+  // Vercel puede enviar el body como string o como objeto dependiendo del runtime
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) {}
+  }
+
+  if (!body || !body.messages) {
+    return res.status(400).json({ error: 'Body inválido: falta campo messages.' });
   }
 
   try {
@@ -21,7 +37,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(body)
     });
 
     const data = await aiResponse.json();
