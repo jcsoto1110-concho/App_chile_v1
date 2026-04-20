@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MoreHorizontal, Loader2, Save, X, UserPlus, Trash2 } from 'lucide-react';
+import { Search, Plus, Loader2, Save, X, UserPlus, Trash2, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getRoles } from '../lib/rolesConfig';
+import { getRoles, saveRoles } from '../lib/rolesConfig';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -9,37 +9,32 @@ export default function UsersManagement() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // States para el Modal y Registro de Usuarios
+  // Modal Nuevo Usuario
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState(null);
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    password: '',
-    role: '',
-    store_id: ''
+    full_name: '', email: '', password: '', role: '', store_id: ''
   });
+
+  // Panel Config Roles (inline)
+  const [showRolesConfig, setShowRolesConfig] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleLabel, setNewRoleLabel] = useState('');
+  const [rolesSaved, setRolesSaved] = useState(false);
 
   async function fetchAll() {
     setLoading(true);
-
-    // Colaboradores
     const { data: usersData } = await supabase
-      .from('profiles')
-      .select('*, stores(name)')
-      .order('created_at', { ascending: false });
+      .from('profiles').select('*, stores(name)').order('created_at', { ascending: false });
     if (usersData) setUsers(usersData);
 
-    // Tiendas
     const { data: storesData } = await supabase.from('stores').select('*');
     if (storesData) setStores(storesData);
 
-    // Roles desde rolesConfig (localStorage - sin dependencia de Supabase RLS)
     const configRoles = getRoles();
     setRoles(configRoles);
     setFormData(prev => ({ ...prev, role: prev.role || configRoles[0]?.name || 'asesor' }));
-
     setLoading(false);
   }
 
@@ -49,35 +44,47 @@ export default function UsersManagement() {
     e.preventDefault();
     setIsSaving(true);
     setErrorObj(null);
-
     const newUserId = crypto.randomUUID();
-
     const { error } = await supabase.from('profiles').insert({
-       id: newUserId,
-       full_name: formData.full_name,
-       email: formData.email,
-       password: formData.password,
-       role: formData.role,
-       store_id: formData.store_id || null,
+      id: newUserId, full_name: formData.full_name, email: formData.email,
+      password: formData.password, role: formData.role, store_id: formData.store_id || null,
     });
-
     setIsSaving(false);
-
     if (!error) {
-       setIsModalOpen(false);
-       setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '' });
-       fetchAll();
+      setIsModalOpen(false);
+      setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '' });
+      fetchAll();
     } else {
-       setErrorObj(error.message);
+      setErrorObj(error.message);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    const ok = window.confirm('¿Seguro que deseas dar de baja a este colaborador? Perderá todos sus FitCoins y progreso.');
-    if (!ok) return;
+    if (!window.confirm('¿Dar de baja a este colaborador? Perderá todo su progreso.')) return;
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
-    if (error) alert('Error al eliminar: ' + error.message);
+    if (error) alert('Error: ' + error.message);
     else fetchAll();
+  };
+
+  // Gestión de Roles inline
+  const handleAddRole = (e) => {
+    e.preventDefault();
+    if (!newRoleName.trim() || !newRoleLabel.trim()) return;
+    const key = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
+    if (roles.find(r => r.name === key)) return;
+    const updated = [...roles, { name: key, label: newRoleLabel.trim() }];
+    setRoles(updated);
+    saveRoles(updated);
+    setNewRoleName('');
+    setNewRoleLabel('');
+    setRolesSaved(true);
+    setTimeout(() => setRolesSaved(false), 2000);
+  };
+
+  const handleDeleteRole = (name) => {
+    const updated = roles.filter(r => r.name !== name);
+    setRoles(updated);
+    saveRoles(updated);
   };
 
   return (
@@ -86,13 +93,92 @@ export default function UsersManagement() {
         <div className="header-action">
           <div>
             <h1 className="text-gradient">Usuarios y Asesores</h1>
-            <p className="text-muted" style={{ marginTop: '4px' }}>Gestiona los perfiles de la fuerza de venta de las tiendas</p>
+            <p className="text-muted" style={{ marginTop: '4px' }}>Gestiona los perfiles de la fuerza de venta</p>
           </div>
-          <button onClick={() => { setIsModalOpen(true); setErrorObj(null); }} className="btn-primary">
-            <Plus size={18} /> Nuevo Usuario
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => setShowRolesConfig(v => !v)}
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Settings size={18} />
+              Config. Roles
+              {showRolesConfig ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            <button onClick={() => { setIsModalOpen(true); setErrorObj(null); }} className="btn-primary">
+              <Plus size={18} /> Nuevo Usuario
+            </button>
+          </div>
         </div>
 
+        {/* ── Panel de Configuración de Roles (colapsable) ── */}
+        {showRolesConfig && (
+          <div className="glass-panel animate-fade-in" style={{ padding: '24px', marginBottom: '24px', border: '1px solid rgba(0,240,255,0.15)' }}>
+            <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings size={18} /> Roles Operativos del Sistema
+              {rolesSaved && <span style={{ fontSize: '0.8rem', color: '#00ff88', marginLeft: '8px' }}>✓ Guardado</span>}
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+
+              {/* Lista de roles actuales */}
+              <div>
+                <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '12px' }}>Roles activos:</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {roles.map(role => (
+                    <div key={role.name} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px'
+                    }}>
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{role.label}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '8px' }}>
+                          ({role.name})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteRole(role.name)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', opacity: 0.7, padding: '4px' }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Agregar nuevo rol */}
+              <div>
+                <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '12px' }}>Agregar nuevo rol:</p>
+                <form onSubmit={handleAddRole} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={newRoleLabel}
+                    onChange={e => setNewRoleLabel(e.target.value)}
+                    placeholder="Nombre visible (Ej: Supervisor)"
+                    style={{ margin: 0 }}
+                    required
+                  />
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={newRoleName}
+                    onChange={e => setNewRoleName(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                    placeholder="Código interno (Ej: supervisor)"
+                    style={{ margin: 0 }}
+                    required
+                  />
+                  <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }}>
+                    <Plus size={16} /> Agregar Rol
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tabla de Usuarios ── */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
             <div className="input-group" style={{ margin: 0, flex: 1, position: 'relative' }}>
@@ -104,7 +190,7 @@ export default function UsersManagement() {
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-              <Loader2 className="animate-spin" size={32} style={{ margin: '0 auto 12px auto', animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={32} style={{ margin: '0 auto 12px auto', animation: 'spin 1s linear infinite' }} />
               <p>Cargando lista de personal...</p>
             </div>
           ) : users.length === 0 ? (
@@ -132,7 +218,6 @@ export default function UsersManagement() {
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>{user.email}</div>
                       </td>
                       <td style={{ padding: '16px' }}>
-                        {/* Buscar label en tabla de roles o mostrar el valor crudo */}
                         <span className={`badge ${user.role === 'admin' || user.role === 'supervisor' ? 'warning' : 'primary'}`}>
                           {roles.find(r => r.name === user.role)?.label || user.role}
                         </span>
@@ -148,7 +233,8 @@ export default function UsersManagement() {
                       </td>
                       <td style={{ padding: '16px', color: 'var(--accent-warning)', fontWeight: 600 }}>{user.fitcoins} FC</td>
                       <td style={{ padding: '16px' }}>
-                        <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', opacity: 0.8 }} title="Eliminar Usuario">
+                        <button onClick={() => handleDeleteUser(user.id)}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', opacity: 0.8 }}>
                           <Trash2 size={20} />
                         </button>
                       </td>
@@ -161,7 +247,7 @@ export default function UsersManagement() {
         </div>
       </div>
 
-      {/* Modal Registro Personal */}
+      {/* ── Modal Nuevo Usuario ── */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -181,7 +267,6 @@ export default function UsersManagement() {
 
             <div style={{ padding: '24px' }}>
               <form onSubmit={handleSaveUser}>
-
                 <div className="input-group">
                   <label className="input-label">Nombre Completo</label>
                   <input type="text" className="input-field" value={formData.full_name}
@@ -206,7 +291,6 @@ export default function UsersManagement() {
                 <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                   <div className="input-group" style={{ flex: 1 }}>
                     <label className="input-label">Rol Operativo</label>
-                    {/* Dinámico: se llena desde la tabla 'roles' de Supabase */}
                     <select className="input-field" value={formData.role}
                       onChange={e => setFormData({ ...formData, role: e.target.value })}>
                       {roles.map(r => (
@@ -229,20 +313,15 @@ export default function UsersManagement() {
 
                 {errorObj && <p style={{ color: 'var(--accent-danger)', marginBottom: '16px', fontSize: '0.9rem' }}>{errorObj}</p>}
 
-                <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
-                  <button type="submit" className="btn-primary" disabled={isSaving} style={{ flex: 1 }}>
-                    {isSaving ? <Loader2 className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={18} />}
+                <div style={{ marginTop: '32px' }}>
+                  <button type="submit" className="btn-primary" disabled={isSaving} style={{ width: '100%', justifyContent: 'center' }}>
+                    {isSaving ? <Loader2 style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={18} />}
                     {isSaving ? ' Afiliando...' : ' Añadir al Sistema'}
                   </button>
                 </div>
-
               </form>
             </div>
-
-            <style>{`
-              @keyframes spin { 100% { transform: rotate(360deg); } }
-              select option { background: var(--bg-dark); color: #fff; }
-            `}</style>
+            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } select option { background: var(--bg-dark); color: #fff; }`}</style>
           </div>
         </div>
       )}
