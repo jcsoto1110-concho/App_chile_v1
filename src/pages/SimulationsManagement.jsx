@@ -6,6 +6,7 @@ import { generateSimulationScenario } from '../lib/ai';
 export default function SimulationsManagement() {
   const [simulations, setSimulations] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ideaPrompt, setIdeaPrompt] = useState("");
@@ -18,7 +19,7 @@ export default function SimulationsManagement() {
 
   async function fetchSimulations() {
     setLoadingList(true);
-    const { data, error } = await supabase.from('simulations').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('simulations').select('*').order('active_date', { ascending: false });
     if (!error && data) {
        setSimulations(data);
     }
@@ -90,48 +91,80 @@ export default function SimulationsManagement() {
               <Loader2 className="animate-spin text-accent-primary" size={32} style={{ margin: '0 auto 12px auto', animation: 'spin 1s linear infinite' }} />
               <p>Buscando escenarios almacenados en la nube...</p>
          </div>
-      ) : simulations.length === 0 ? (
-         <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <Bot size={48} style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
-              <p>Aún no has creado simulaciones virtuales. ¡Crea la primera con Inteligencia Artificial!</p>
-         </div>
-      ) : (
-        <div className="grid grid-2">
-           {simulations.map(sim => (
-               <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '40px', height: '40px', background: 'rgba(112, 0, 255, 0.2)', borderRadius: '12px', display: 'grid', placeItems: 'center' }}>
-                           <Bot size={24} color="var(--accent-secondary)"/>
-                        </div>
-                        <div>
-                           <h3 style={{ fontSize: '1.2rem' }}>{sim.title}</h3>
-                           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2px' }}>Rol: {sim.role_target}</p>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
-                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Actitud del Cliente IA:</div>
-                     <div style={{ fontWeight: 600 }}>{sim.ai_persona}</div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                     <div>
-                       <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Criterios a Evaluar:</div>
-                       <ul style={{ fontSize: '0.85rem', color: 'var(--text-main)', paddingLeft: '16px', margin: 0 }}>
-                         {(sim.evaluation_criteria || []).map((c, i) => <li key={i}>{c}</li>)}
-                       </ul>
-                     </div>
-                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <Target size={16} color="var(--accent-primary)"/>
-                        <span style={{ fontSize: '0.9rem' }}><strong style={{ color: 'var(--accent-primary)' }}>{sim.reward_xp} XP</strong></span>
-                     </div>
-                  </div>
+      ) : (() => {
+        const todayRaw = new Date().toISOString().split('T')[0];
+        const active = simulations.filter(s => !s.end_date || s.end_date >= todayRaw);
+        const expired = simulations.filter(s => s.end_date && s.end_date < todayRaw);
+        return (
+          <>
+            {active.length === 0 ? (
+               <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    <Bot size={48} style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
+                    <p>No hay simulaciones activas. ¡Crea la primera con Inteligencia Artificial!</p>
                </div>
-           ))}
-        </div>
-      )}
+            ) : (
+              <div className="grid grid-2">
+                 {active.map(sim => (
+                     <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ width: '40px', height: '40px', background: 'rgba(112, 0, 255, 0.2)', borderRadius: '12px', display: 'grid', placeItems: 'center' }}>
+                                 <Bot size={24} color="var(--accent-secondary)"/>
+                              </div>
+                              <div>
+                                 <h3 style={{ fontSize: '1.2rem' }}>{sim.title}</h3>
+                                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2px' }}>Rol: {sim.role_target}</p>
+                              </div>
+                           </div>
+                           {sim.end_date && <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', background: 'rgba(255,200,0,0.1)', padding: '4px 8px', borderRadius: '8px', whiteSpace: 'nowrap' }}>Vence: {sim.end_date}</span>}
+                        </div>
+
+                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+                           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Actitud del Cliente IA:</div>
+                           <div style={{ fontWeight: 600 }}>{sim.ai_persona}</div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                           <div>
+                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Criterios a Evaluar:</div>
+                             <ul style={{ fontSize: '0.85rem', color: 'var(--text-main)', paddingLeft: '16px', margin: 0 }}>
+                               {(sim.evaluation_criteria || []).map((c, i) => <li key={i}>{c}</li>)}
+                             </ul>
+                           </div>
+                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <Target size={16} color="var(--accent-primary)"/>
+                              <span style={{ fontSize: '0.9rem' }}><strong style={{ color: 'var(--accent-primary)' }}>{sim.reward_xp} XP</strong></span>
+                           </div>
+                        </div>
+                     </div>
+                 ))}
+              </div>
+            )}
+
+            {/* HISTÓRICO */}
+            {expired.length > 0 && (
+              <div style={{ marginTop: '40px' }}>
+                <button onClick={() => setShowHistory(h => !h)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  {showHistory ? '▲' : '▼'} Histórico Vencido ({expired.length} simulaciones)
+                </button>
+                {showHistory && (
+                  <div className="grid grid-2" style={{ opacity: 0.5 }}>
+                    {expired.map(sim => (
+                      <div key={sim.id} className="glass-panel" style={{ padding: '24px', border: '1px solid rgba(255,0,0,0.15)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <h3 style={{ fontSize: '1rem' }}>{sim.title}</h3>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sim.role_target} · {sim.reward_xp} XP</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       </div>
 

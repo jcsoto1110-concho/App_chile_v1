@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export default function ChallengesManagement() {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
 
   // States para el form/modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,7 +31,7 @@ export default function ChallengesManagement() {
 
   async function fetchChallenges() {
     setLoading(true);
-    const { data, error } = await supabase.from('daily_challenges').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('daily_challenges').select('*').order('active_date', { ascending: false });
     if (!error && data) {
        setChallenges(data);
     }
@@ -106,37 +107,69 @@ export default function ChallengesManagement() {
               <Loader2 className="animate-spin text-accent-primary" size={32} style={{ margin: '0 auto 12px auto', animation: 'spin 1s linear infinite' }} />
               <p>Buscando misiones asignadas...</p>
           </div>
-      ) : challenges.length === 0 ? (
-          <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <p>No has creado ningún reto diario todavía.</p>
-          </div>
-      ) : (
-        <div className="grid grid-3" style={{ marginBottom: '32px' }}>
-           {challenges.map(challenge => (
-              <div key={challenge.id} className="glass-panel animate-fade-in" style={{ padding: '24px', position: 'relative' }}>
-                 <div style={{ position: 'absolute', top: '24px', right: '24px' }}>
-                    <span className="badge success">Activo</span>
-                 </div>
-                 <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', paddingRight: '60px' }}>{challenge.title}</h3>
-                 <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '16px' }}>Dirigido a: {challenge.role_target || 'Todos'}</p>
-                 
-                 <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                    <span className="badge warning">+{challenge.reward_fitcoins} FC</span>
-                    <span className="badge primary">+{challenge.reward_xp} XP</span>
-                 </div>
+      ) : (() => {
+        const todayRaw = new Date().toISOString().split('T')[0];
+        const active = challenges.filter(c => !c.end_date || c.end_date >= todayRaw);
+        const expired = challenges.filter(c => c.end_date && c.end_date < todayRaw);
+        return (
+          <>
+            {active.length === 0 ? (
+                <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    <p>No hay retos activos. ¡Crea el primero!</p>
+                </div>
+            ) : (
+              <div className="grid grid-3" style={{ marginBottom: '32px' }}>
+                 {active.map(challenge => (
+                    <div key={challenge.id} className="glass-panel animate-fade-in" style={{ padding: '24px', position: 'relative' }}>
+                       <div style={{ position: 'absolute', top: '24px', right: '24px' }}>
+                          <span className="badge success">Activo</span>
+                       </div>
+                       <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', paddingRight: '60px' }}>{challenge.title}</h3>
+                       <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '16px' }}>Dirigido a: {challenge.role_target || 'Todos'}</p>
+                       
+                       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                          <span className="badge warning">+{challenge.reward_fitcoins} FC</span>
+                          <span className="badge primary">+{challenge.reward_xp} XP</span>
+                       </div>
 
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                       <Clock size={14} /> Cierre: {challenge.end_date ? new Date(challenge.end_date).toLocaleDateString() : 'N/A'}
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                             <Clock size={14} /> Cierre: {challenge.end_date ? new Date(challenge.end_date).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <button style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}><Edit2 size={16} /></button>
+                       </div>
                     </div>
-                    <button style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}><Edit2 size={16} /></button>
-                 </div>
+                 ))}
               </div>
-           ))}
-        </div>
-      )}
+            )}
+
+            {/* HISTÓRICO VENCIDO */}
+            {expired.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <button onClick={() => setShowHistory(h => !h)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  {showHistory ? '▲' : '▼'} Histórico Vencido ({expired.length} retos)
+                </button>
+                {showHistory && (
+                  <div className="grid grid-3" style={{ opacity: 0.45 }}>
+                    {expired.map(challenge => (
+                      <div key={challenge.id} className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(255,0,0,0.15)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <h3 style={{ fontSize: '1rem', paddingRight: '8px' }}>{challenge.title}</h3>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '3px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>Venció: {challenge.end_date}</span>
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{challenge.role_target || 'Todos'} · +{challenge.reward_xp} XP · +{challenge.reward_fitcoins} FC</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       </div>
+
 
       {/* Modal / Panel Superpuesto Registro Retos */}
       {isModalOpen && (
