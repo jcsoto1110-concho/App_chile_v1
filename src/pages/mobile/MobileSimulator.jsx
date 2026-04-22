@@ -66,10 +66,12 @@ export default function MobileSimulator() {
     // QUEMAR INTENTO en base de datos si es la primera letra que manda 💀
     if (!firstAttemptBurned) {
         setFirstAttemptBurned(true);
-        await supabase.from('user_simulation_progress').insert({
-            user_id: profile.id,
-            simulation_id: scenario.id
-        }).catch(()=>null); // Fuego y olvido
+        try {
+            await supabase.from('user_simulation_progress').insert({
+                user_id: profile.id,
+                simulation_id: scenario.id
+            });
+        } catch (_) { /* fuego y olvido */ }
     }
     
     // Enviar a Cerebro IA para evaluar la conversación
