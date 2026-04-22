@@ -11,11 +11,11 @@ export default function MobileHome() {
   const [progressLog, setProgressLog] = useState({});
   const [storeKpi, setStoreKpi] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [localFitcoins, setLocalFitcoins] = useState(null); // FC en tiempo real desde DB
 
   useEffect(() => {
     async function fetchActive() {
        const today = new Date().toISOString().split('T')[0];
-       // Traer retos de hoy o anteriores que estén activos
        const { data } = await supabase
           .from('daily_challenges')
           .select('*')
@@ -25,6 +25,11 @@ export default function MobileHome() {
        if (data) setChallenges(data);
 
        if (profile?.id && data) {
+           // Refrescar FC real desde DB (no del contexto que queda viejo)
+           const { data: freshProfile } = await supabase
+               .from('profiles').select('fitcoins').eq('id', profile.id).single();
+           if (freshProfile) setLocalFitcoins(freshProfile.fitcoins ?? 0);
+
            const { data: prog } = await supabase.from('user_progress').select('*').eq('user_id', profile.id);
            const pLog = {};
            prog?.forEach(p => pLog[p.challenge_id] = p.score === 0 ? 'failed' : 'completed');
@@ -36,24 +41,23 @@ export default function MobileHome() {
 
            data.forEach(ch => {
                if (ch.end_date && ch.end_date < todayRaw && !pLog[ch.id]) {
-                   // Expiró y no tenía completado -> Castigo
                    overdueInserts.push({ user_id: profile.id, challenge_id: ch.id, score: 0 });
-                   penaltiesAmount += 100;
-                   pLog[ch.id] = 'failed'; // Actualizar el mapa que veremos en la app
+                   penaltiesAmount += 5; // Reducido a 5 FC por reto (no 100)
+                   pLog[ch.id] = 'failed';
                }
            });
 
            if (overdueInserts.length > 0) {
                await supabase.from('user_progress').insert(overdueInserts);
-               const finalCoins = (profile.fitcoins || 0) - penaltiesAmount;
+               const currentFc = freshProfile?.fitcoins ?? profile.fitcoins ?? 0;
+               const finalCoins = Math.max(0, currentFc - penaltiesAmount); // Mínimo 0, nunca negativo
                await supabase.from('profiles').update({ fitcoins: finalCoins }).eq('id', profile.id);
-               profile.fitcoins = finalCoins; // mutación local para UI instantánea
+               setLocalFitcoins(finalCoins);
            }
            // ----------------------------------------------------
 
            setProgressLog(pLog);
 
-           // Extraer KPI de la tienda actual
            const { data: storeInfo } = await supabase.from('stores').select('*').eq('id', profile.store_id).single();
            if (storeInfo) setStoreKpi(storeInfo);
        }
@@ -72,7 +76,9 @@ export default function MobileHome() {
          </div>
          <div style={{ background: 'rgba(255, 175, 0, 0.1)', padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
              <span style={{ fontSize: '1rem' }}>⚡</span>
-             <strong style={{ color: 'var(--accent-warning)', fontSize: '0.9rem' }}>{profile?.fitcoins || 0} FC</strong>
+             <strong style={{ color: 'var(--accent-warning)', fontSize: '0.9rem' }}>
+               {localFitcoins !== null ? localFitcoins : (profile?.fitcoins || 0)} FC
+             </strong>
          </div>
       </div>
 
