@@ -15,6 +15,7 @@ import MobileHome from './pages/mobile/MobileHome';
 import MobileSimulator from './pages/mobile/MobileSimulator';
 import MobileProfile from './pages/mobile/MobileProfile';
 import MobileQuiz from './pages/mobile/MobileQuiz';
+import MobileTeam from './pages/mobile/MobileTeam';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 
 // Layout Auxiliar para envolver el backoffice existente
@@ -50,31 +51,31 @@ function RouterLogic() {
     <BrowserRouter>
       <Routes>
         
-        {/* === RUTAS ADMINISTRADOR === */}
-        {isAdmin ? (
+        {/* RUTAS COMPARTIDAS / DINÁMICAS */}
+        <Route path="/" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/app/home" replace />} />
+
+        {/* === RUTAS ADMINISTRATIVAS === */}
+        {isAdmin && (
            <>
-             <Route path="/" element={<Navigate to="/dashboard" replace />} />
              <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
              <Route path="/store-detail" element={<AppLayout><StoreDetail /></AppLayout>} />
              <Route path="/users" element={<AppLayout><UsersManagement /></AppLayout>} />
              <Route path="/challenges" element={<AppLayout><ChallengesManagement /></AppLayout>} />
              <Route path="/simulations" element={<AppLayout><SimulationsManagement /></AppLayout>} />
              <Route path="/roles" element={<AppLayout><RolesConfig /></AppLayout>} />
-             <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
-           </>
-        ) : (
-           /* === RUTAS EMPLEADO TIPO ASESOR === */
-           <>
-             <Route path="/" element={<Navigate to="/app/home" replace />} />
-             <Route path="/app" element={<MobileLayout />}>
-                 <Route path="home" element={<MobileHome />} />
-                 <Route path="simulator" element={<MobileSimulator />} />
-                 <Route path="quiz" element={<MobileQuiz />} />
-                 <Route path="profile" element={<MobileProfile />} />
-             </Route>
-             <Route path="*" element={<Navigate to="/app/home" replace />} />
            </>
         )}
+
+        {/* === RUTAS MÓVILES (ACCESIBLES PARA TODOS) === */}
+        <Route path="/app" element={<MobileLayout />}>
+            <Route path="home" element={<MobileHome />} />
+            <Route path="simulator" element={<MobileSimulator />} />
+            <Route path="quiz" element={<MobileQuiz />} />
+            <Route path="profile" element={<MobileProfile />} />
+            <Route path="team" element={<MobileTeam />} />
+        </Route>
+
+        <Route path="*" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/app/home" replace />} />
         
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, User, AlertTriangle } from 'lucide-react';
+import { Home, MessageSquare, User, AlertTriangle, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
@@ -81,22 +81,25 @@ export default function MobileLayout() {
             <Outlet />
          </div>
 
-         {/* Barra de Navegación Inferior (Bottom Bar) */}
-         <nav style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: '70px',
-            background: 'rgba(15, 17, 21, 0.95)',
-            backdropFilter: 'blur(20px)',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            paddingBottom: 'env(safe-area-inset-bottom)'
-         }}>
-             <NavItem to="/app/home" icon={<Home size={24} />} label="Misiones" />
-             <NavItem to="/app/simulator" icon={<MessageSquare size={24} />} label="Simulador" />
-             <NavItem to="/app/profile" icon={<User size={24} />} label="Mi Nivel" />
-         </nav>
+          {/* Barra de Navegación Inferior (Bottom Bar) */}
+          <nav style={{
+             position: 'absolute', bottom: 0, left: 0, right: 0,
+             height: '70px',
+             background: 'rgba(15, 17, 21, 0.95)',
+             backdropFilter: 'blur(20px)',
+             borderTop: '1px solid rgba(255,255,255,0.1)',
+             display: 'flex',
+             justifyContent: 'space-around',
+             alignItems: 'center',
+             paddingBottom: 'env(safe-area-inset-bottom)'
+          }}>
+              <NavItem to="/app/home" icon={<Home size={24} />} label="Misiones" />
+              {['admin', 'supervisor', 'jefe'].includes(profile?.role) && (
+                 <NavItem to="/app/team" icon={<Users size={24} />} label="Mi Equipo" />
+              )}
+              <NavItem to="/app/simulator" icon={<MessageSquare size={24} />} label="Simulador" />
+              <NavItem to="/app/profile" icon={<User size={24} />} label="Mi Nivel" />
+          </nav>
       </div>
     </div>
   );
