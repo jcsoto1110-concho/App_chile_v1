@@ -12,13 +12,15 @@ export default function MobileQuiz() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [resultStatus, setResultStatus] = useState(null); // 'success' | 'error' | null
+  const [resultStatus, setResultStatus] = useState(null); // 'success' | 'error' | 'comment_pending' | null
   const [isProcessing, setIsProcessing] = useState(false);
   const [examPassed, setExamPassed] = useState(false);
   const [scoreCount, setScoreCount] = useState(0);
   const [earnedStats, setEarnedStats] = useState({ xp: 0, fc: 0 });
   const [isLocked, setIsLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
+  const [userComment, setUserComment] = useState('');
+  const [isSavingFinal, setIsSavingFinal] = useState(false);
 
   // Timer para Trivia Exprés
   React.useEffect(() => {
@@ -61,7 +63,6 @@ export default function MobileQuiz() {
      return <div style={{ padding: '20px', color: '#fff' }}>No se pudo cargar el reto. <button onClick={() => navigate('/app/home')}>Volver</button></div>;
   }
 
-  // Normalizamos a Array por si viene del formato viejo
   const quizArray = Array.isArray(challenge.quiz_data) ? challenge.quiz_data : (challenge.quiz_data ? [challenge.quiz_data] : null);
   const currentQuiz = quizArray ? quizArray[currentIndex] : null;
 
@@ -80,43 +81,54 @@ export default function MobileQuiz() {
     }
 
     setTimeout(async () => {
-        // Lógica de Siguiente Escena
         const isLastQuestion = !quizArray || currentIndex === quizArray.length - 1;
 
         if (isLastQuestion) {
-            // FIN DEL EXAMEN
             const finalHits = isCorrect ? scoreCount + 1 : scoreCount;
             const percentage = quizArray ? (finalHits / quizArray.length) : 1;
-            
-            // Recompensa Proporcional al rendimiento
-            const earnedXp = Math.max(1, Math.round(challenge.reward_xp * percentage)); // Al menos 1 xp por terminar
+            const earnedXp = Math.max(1, Math.round(challenge.reward_xp * percentage));
             const earnedCoins = Math.round(challenge.reward_fitcoins * percentage); 
 
             setEarnedStats({ xp: earnedXp, fc: earnedCoins, percentage: Math.round(percentage * 100) });
-
-            const newXp = (profile.current_xp || 0) + earnedXp;
-            const newCoins = (profile.fitcoins || 0) + earnedCoins;
-
-            await supabase.from('profiles').update({
-               current_xp: newXp,
-               fitcoins: newCoins
-            }).eq('id', profile.id);
-
-            await supabase.from('user_progress').insert({
-               user_id: profile.id,
-               challenge_id: challenge.id,
-               score: Math.round(percentage * 100)
-            });
-            
-            setExamPassed(true);
+            setResultStatus('comment_pending');
         } else {
-            // Moverse Inexorablemente a la Siguiente Pregunta
             setCurrentIndex(prev => prev + 1);
             setSelectedOption(null);
             setResultStatus(null);
         }
         setIsProcessing(false);
-    }, 1500); // 1.5s para asimilar si acertó o falló visualmente antes de saltar
+    }, 1500);
+  };
+
+  const finalizeChallenge = async () => {
+     if (!userComment.trim()) {
+        alert("Por favor, ingresa un breve comentario sobre lo aprendido.");
+        return;
+     }
+     setIsSavingFinal(true);
+     try {
+        const newXp = (profile.current_xp || 0) + earnedStats.xp;
+        const newCoins = (profile.fitcoins || 0) + earnedStats.fc;
+
+        await supabase.from('profiles').update({
+           current_xp: newXp,
+           fitcoins: newCoins
+        }).eq('id', profile.id);
+
+        await supabase.from('user_progress').insert({
+           user_id: profile.id,
+           challenge_id: challenge.id,
+           score: earnedStats.percentage,
+           comment: userComment
+        });
+
+        setExamPassed(true);
+     } catch (err) {
+        console.error(err);
+        alert("Error al guardar progreso");
+     } finally {
+        setIsSavingFinal(false);
+     }
   };
 
   if (isLocked) {
@@ -234,6 +246,28 @@ export default function MobileQuiz() {
                  {resultStatus === 'error' && (
                     <div className="animate-fade-in" style={{ marginTop: '24px', textAlign: 'center' }}>
                         <p style={{ color: '#ff3232', fontSize: '0.9rem' }}>{selectedOption === -1 ? '¡Se agotó el tiempo!' : 'Incorrecto.'} Saltando a la siguiente...</p>
+                    </div>
+                 )}
+
+                 {resultStatus === 'comment_pending' && (
+                    <div className="animate-fade-in" style={{ marginTop: '32px', borderTop: '1px solid var(--glass-border)', paddingTop: '24px' }}>
+                        <h4 style={{ color: 'var(--accent-primary)', marginBottom: '12px' }}>¡Casi listo!</h4>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Cuéntanos brevemente qué te pareció este reto o qué aprendiste:</p>
+                        <textarea 
+                          className="input-field" 
+                          style={{ background: 'rgba(0,0,0,0.3)', minHeight: '100px', width: '100%', color: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+                          placeholder="Escribe tu comentario aquí..."
+                          value={userComment}
+                          onChange={(e) => setUserComment(e.target.value)}
+                        />
+                        <button 
+                          onClick={finalizeChallenge} 
+                          disabled={isSavingFinal}
+                          className="btn-primary" 
+                          style={{ width: '100%', marginTop: '16px', justifyContent: 'center' }}
+                        >
+                          {isSavingFinal ? <Loader2 className="animate-spin" /> : 'Finalizar y Ganar Recompensas'}
+                        </button>
                     </div>
                  )}
               </div>
