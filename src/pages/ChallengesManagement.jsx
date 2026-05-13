@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Edit2, Loader2, Save, X, Trophy } from 'lucide-react';
+import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function ChallengesManagement() {
@@ -221,14 +221,58 @@ export default function ChallengesManagement() {
                   </div>
 
                   <div className="input-group">
-                     <label className="input-label">Enlace URL (Video Soporte, Imagen) - Opcional</label>
-                     <input 
-                       type="url" 
-                       className="input-field" 
-                       value={formData.content_url}
-                       onChange={(e)=>setFormData({...formData, content_url: e.target.value})}
-                       placeholder="https://youtube.com/..." 
-                     />
+                     <label className="input-label">Contenido Multimedia (Imagen, PDF, Video)</label>
+                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={formData.content_url}
+                          onChange={(e)=>setFormData({...formData, content_url: e.target.value})}
+                          placeholder="URL externa o archivo subido..." 
+                          style={{ flex: 1 }}
+                        />
+                        <label className="btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', whiteSpace: 'nowrap' }}>
+                           {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                           {isSaving ? 'Subiendo...' : 'Subir Archivo'}
+                           <input 
+                              type="file" 
+                              style={{ display: 'none' }} 
+                              accept="image/*,application/pdf,video/*"
+                              onChange={async (e) => {
+                                 const file = e.target.files?.[0];
+                                 if (!file) return;
+                                 
+                                 setIsSaving(true);
+                                 try {
+                                    const fileExt = file.name.split('.').pop();
+                                    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                                    const filePath = `retos/${fileName}`;
+
+                                    const { data, error } = await supabase.storage
+                                       .from('challenges')
+                                       .upload(filePath, file);
+
+                                    if (error) throw error;
+
+                                    const { data: { publicUrl } } = supabase.storage
+                                       .from('challenges')
+                                       .getPublicUrl(filePath);
+
+                                    setFormData({ ...formData, content_url: publicUrl });
+                                    alert('Archivo cargado con éxito');
+                                 } catch (err) {
+                                    console.error('Error al subir:', err);
+                                    alert('Error al subir archivo: ' + err.message);
+                                 } finally {
+                                    setIsSaving(false);
+                                 }
+                              }}
+                           />
+                        </label>
+                     </div>
+                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Puedes pegar una URL o subir fotos, PDFs o documentos directamente.
+                     </p>
                   </div>
 
                   <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>

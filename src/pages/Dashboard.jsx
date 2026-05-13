@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Users, TrendingUp, Target, Award, Loader2 } from 'lucide-react';
+import { Activity, Users, TrendingUp, Target, Award, Loader2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { utils, writeFile } from 'xlsx';
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState({ users: 0, challenges: 0, sims: 0 });
@@ -158,6 +159,67 @@ export default function Dashboard() {
           <h1 className="text-gradient">Dashboard General</h1>
           <p className="text-muted" style={{ marginTop: '4px' }}>Métricas de tu fuerza de ventas extraídas desde Supabase</p>
         </div>
+        <button onClick={async () => {
+          setLoading(true);
+          try {
+            const { data: profiles } = await supabase.from('profiles').select('*, stores(name)');
+            const { data: progress } = await supabase.from('user_progress').select('user_id');
+            const { data: storesList } = await supabase.from('stores').select('*');
+
+            // Procesar Colaboradores
+            const colabsData = (profiles || []).map(p => {
+              const completions = (progress || []).filter(pr => pr.user_id === p.id).length;
+              return {
+                'Nombre Completo': p.full_name,
+                'Email': p.email,
+                'Rol': p.role,
+                'Tienda': p.stores?.name || 'N/A',
+                'XP Total': p.current_xp || 0,
+                'FitCoins': p.fitcoins || 0,
+                'Nivel Actual': p.current_level || 1,
+                'Retos Completados': completions,
+                'Racha (Días)': p.streak_days || 0,
+                'Fecha Registro': new Date(p.created_at).toLocaleDateString()
+              };
+            });
+
+            // Procesar Tiendas
+            const tiendasData = (storesList || []).map(st => {
+              const employees = (profiles || []).filter(p => p.store_id === st.id);
+              const totalXp = employees.reduce((sum, e) => sum + (e.current_xp || 0), 0);
+              const totalFc = employees.reduce((sum, e) => sum + (e.fitcoins || 0), 0);
+              const avgLevel = employees.length > 0 ? (employees.reduce((sum, e) => sum + (e.current_level || 1), 0) / employees.length).toFixed(1) : 0;
+              
+              return {
+                'Nombre Tienda': st.name,
+                'Ubicación': st.location,
+                'Colaboradores': employees.length,
+                'XP Acumulada': totalXp,
+                'FitCoins Acumulados': totalFc,
+                'Nivel Promedio': avgLevel,
+                'Venta Mensual Goal': st.monthly_sales_goal || 0,
+                'Venta Actual': st.current_sales || 0,
+                '% Cumplimiento': st.monthly_sales_goal ? ((st.current_sales / st.monthly_sales_goal) * 100).toFixed(1) + '%' : '0%'
+              };
+            });
+
+            const wb = utils.book_new();
+            const wsColabs = utils.json_to_sheet(colabsData);
+            const wsTiendas = utils.json_to_sheet(tiendasData);
+            
+            utils.book_append_sheet(wb, wsColabs, "Colaboradores");
+            utils.book_append_sheet(wb, wsTiendas, "Tiendas");
+            
+            writeFile(wb, `Reporte_Desempeño_Coach_${new Date().toISOString().split('T')[0]}.xlsx`);
+          } catch (err) {
+            console.error(err);
+            alert("Error al generar el reporte");
+          } finally {
+            setLoading(false);
+          }
+        }} className="btn-primary" style={{ background: 'var(--accent-secondary)', color: '#000' }}>
+          <Download size={18} /> Descargar Reporte Excel
+        </button>
       </div>
 
       <div className="grid grid-3" style={{ marginBottom: '32px' }}>
