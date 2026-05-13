@@ -94,7 +94,7 @@ export default function MobileLayout() {
              paddingBottom: 'env(safe-area-inset-bottom)'
           }}>
               <NavItem to="/app/home" icon={<Home size={24} />} label="Misiones" />
-              {['admin', 'supervisor', 'jefe'].includes(profile?.role) && (
+              {['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(profile?.role?.toLowerCase()) && (
                  <NavItem to="/app/team" icon={<Users size={24} />} label="Mi Equipo" />
               )}
               <NavItem to="/app/simulator" icon={<MessageSquare size={24} />} label="Simulador" />

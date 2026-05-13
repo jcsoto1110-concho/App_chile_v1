@@ -18,7 +18,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function fetchDashboard() {
-      const isStoreManager = userProfile?.role === 'supervisor' || userProfile?.role === 'jefe';
+      const isStoreManager = ['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(userProfile?.role?.toLowerCase()) && userProfile?.role !== 'admin';
       const myStoreId = userProfile?.store_id;
 
       // Optimizamos extrayendo conteos básicos
