@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import MobileLayout from './components/MobileLayout';
 
 import Dashboard from './pages/Dashboard';
+import StoreDetail from './pages/StoreDetail';
 import UsersManagement from './pages/UsersManagement';
 import ChallengesManagement from './pages/ChallengesManagement';
 import SimulationsManagement from './pages/SimulationsManagement';
@@ -54,6 +55,7 @@ function RouterLogic() {
            <>
              <Route path="/" element={<Navigate to="/dashboard" replace />} />
              <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+             <Route path="/store-detail" element={<AppLayout><StoreDetail /></AppLayout>} />
              <Route path="/users" element={<AppLayout><UsersManagement /></AppLayout>} />
              <Route path="/challenges" element={<AppLayout><ChallengesManagement /></AppLayout>} />
              <Route path="/simulations" element={<AppLayout><SimulationsManagement /></AppLayout>} />
