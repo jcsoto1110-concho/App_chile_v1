@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Loader2, Save, X, UserPlus, Trash2, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, Loader2, Save, X, UserPlus, Trash2, Settings, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles, saveRoles } from '../lib/rolesConfig';
+import * as XLSX from 'xlsx';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -87,6 +88,87 @@ export default function UsersManagement() {
     saveRoles(updated);
   };
 
+  const exportToExcel = () => {
+    const exportData = users.map(user => ({
+      'Nombre Completo': user.full_name,
+      'Email': user.email,
+      'Rol': roles.find(r => r.name === user.role)?.label || user.role,
+      'Tienda': user.stores?.name || 'Sin Asignar',
+      'Nivel': user.current_level,
+      'XP': user.current_xp,
+      'FitCoins': user.fitcoins,
+      'Racha (Días)': user.streak_days,
+      'Fecha Registro': new Date(user.created_at).toLocaleDateString()
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
+    XLSX.writeFile(wb, `Usuarios_Coach_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleBulkUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsSaving(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target.result;
+        const wb = XLSX.read(data, { type: 'array' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const rawData = XLSX.utils.sheet_to_json(ws);
+
+        const processedUsers = rawData.map(row => {
+          const name = row['Nombre Completo'] || row['Nombre'] || row['Full Name'];
+          const email = row['Email'] || row['Correo'] || row['email'];
+          const roleLabel = row['Rol'] || row['Role'];
+          const storeName = row['Tienda'] || row['Store'] || row['Sede'];
+          const password = row['Password'] || row['Clave'] || 'marathon2026';
+
+          const foundRole = roles.find(r => r.label.toLowerCase() === String(roleLabel || '').toLowerCase());
+          const role = foundRole ? foundRole.name : (roleLabel || 'asesor').toLowerCase();
+
+          const foundStore = stores.find(s => s.name.toLowerCase() === String(storeName || '').toLowerCase());
+          const store_id = foundStore ? foundStore.id : null;
+
+          return {
+            id: crypto.randomUUID(),
+            full_name: name,
+            email: email,
+            password: password,
+            role: role,
+            store_id: store_id,
+            current_level: 1,
+            current_xp: 0,
+            fitcoins: 0,
+            streak_days: 0
+          };
+        }).filter(u => u.full_name && u.email);
+
+        if (processedUsers.length === 0) {
+          alert('No se encontraron datos válidos en el Excel. Asegúrate de tener columnas como "Nombre Completo" y "Email".');
+          setIsSaving(false);
+          return;
+        }
+
+        const { error } = await supabase.from('profiles').insert(processedUsers);
+        if (error) throw error;
+
+        alert(`¡Éxito! Se cargaron ${processedUsers.length} colaboradores.`);
+        fetchAll();
+      } catch (err) {
+        console.error(err);
+        alert('Error al procesar el archivo: ' + err.message);
+      } finally {
+        setIsSaving(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   return (
     <>
       <div className="animate-fade-in relative">
@@ -105,6 +187,13 @@ export default function UsersManagement() {
               Config. Roles
               {showRolesConfig ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
+            <button onClick={exportToExcel} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Download size={18} /> Descargar
+            </button>
+            <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <Upload size={18} /> Carga Masiva
+              <input type="file" accept=".xlsx, .xls" onChange={handleBulkUpload} style={{ display: 'none' }} />
+            </label>
             <button onClick={() => { setIsModalOpen(true); setErrorObj(null); }} className="btn-primary">
               <Plus size={18} /> Nuevo Usuario
             </button>
