@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Users, TrendingUp, Target, Award, Loader2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { utils, writeFile } from 'xlsx';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Dashboard() {
+  const { profile: userProfile } = useAuth();
   const [metrics, setMetrics] = useState({ users: 0, challenges: 0, sims: 0 });
   const [stores, setStores] = useState([]);
   const [topProfiles, setTopProfiles] = useState([]);
@@ -16,13 +18,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function fetchDashboard() {
+      const isStoreManager = userProfile?.role === 'supervisor' || userProfile?.role === 'jefe';
+      const myStoreId = userProfile?.store_id;
+
       // Optimizamos extrayendo conteos básicos
       const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
       const { count: chalCount } = await supabase.from('daily_challenges').select('*', { count: 'exact', head: true });
       const { count: simsCount } = await supabase.from('simulations').select('*', { count: 'exact', head: true });
       
-      const { data: storesList } = await supabase.from('stores').select('*');
-      const { data: profilesList } = await supabase.from('profiles').select('id, store_id, current_xp, fitcoins, full_name, role');
+      let storesQuery = supabase.from('stores').select('*');
+      if (isStoreManager && myStoreId) storesQuery = storesQuery.eq('id', myStoreId);
+      const { data: storesList } = await storesQuery;
+
+      let profilesQuery = supabase.from('profiles').select('id, store_id, current_xp, fitcoins, full_name, role');
+      if (isStoreManager && myStoreId) profilesQuery = profilesQuery.eq('store_id', myStoreId);
+      const { data: profilesList } = await profilesQuery;
 
       let computedStores = [];
       let computedEmployees = [];
@@ -156,8 +166,8 @@ export default function Dashboard() {
     <div className="animate-fade-in">
       <div className="header-action">
         <div>
-          <h1 className="text-gradient">Dashboard General</h1>
-          <p className="text-muted" style={{ marginTop: '4px' }}>Métricas de tu fuerza de ventas extraídas desde Supabase</p>
+          <h1 className="text-gradient">{(userProfile?.role === 'supervisor' || userProfile?.role === 'jefe') ? `Panel de Control - ${stores[0]?.name || 'Mi Tienda'}` : 'Dashboard General'}</h1>
+          <p className="text-muted" style={{ marginTop: '4px' }}>{(userProfile?.role === 'supervisor' || userProfile?.role === 'jefe') ? 'Monitoreo de desempeño local y rankings de sucursal' : 'Métricas de tu fuerza de ventas extraídas desde Supabase'}</p>
         </div>
         <button onClick={async () => {
           setLoading(true);
@@ -251,7 +261,7 @@ export default function Dashboard() {
       <div className="grid grid-2">
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-             <h2 style={{ margin: 0 }}>Ranking Tiendas Activas</h2>
+             <h2 style={{ margin: 0 }}>{(userProfile?.role === 'supervisor' || userProfile?.role === 'jefe') ? 'Estado de Meta Sucursal' : 'Ranking Tiendas Activas'}</h2>
              <button onClick={() => setIsBulkOpen(true)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Excel Básico (Masivo)</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -283,7 +293,7 @@ export default function Dashboard() {
         </div>
 
         <div className="glass-panel" style={{ padding: '24px' }}>
-           <h2 style={{ marginBottom: '24px' }}>Top Asesores (Ranking)</h2>
+           <h2 style={{ marginBottom: '24px' }}>{(userProfile?.role === 'supervisor' || userProfile?.role === 'jefe') ? 'Ranking de mi Tienda (Colaboradores)' : 'Top Asesores (Ranking Global)'}</h2>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
              {topProfiles.length === 0 ? <p className="text-muted">No existen empleados suficientes.</p> : null}
              {topProfiles.map((p, i) => (
