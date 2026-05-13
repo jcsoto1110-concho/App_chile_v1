@@ -36,8 +36,10 @@ export default function Login() {
                localStorage.setItem('custom_session', JSON.stringify(profData));
                
                // Redirección Inteligente
-               const isManager = ['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(profData.role?.toLowerCase());
-               window.location.href = isManager ? '/dashboard' : '/app/home';
+               // Solo Admin y Supervisor van al Dashboard Web. 
+               // Jefe de Tienda y Asesores van a la App Móvil.
+               const isWebAdmin = ['admin', 'supervisor'].includes(profData.role?.toLowerCase());
+               window.location.href = isWebAdmin ? '/dashboard' : '/app/home';
                return; // Salir aquí
             }
         }

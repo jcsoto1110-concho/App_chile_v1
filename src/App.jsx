@@ -52,7 +52,7 @@ function RouterLogic() {
       <Routes>
         
         {/* RUTAS COMPARTIDAS / DINÁMICAS */}
-        <Route path="/" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/app/home" replace />} />
+        <Route path="/" element={['admin', 'supervisor'].includes(profile.role?.toLowerCase()) ? <Navigate to="/dashboard" replace /> : <Navigate to="/app/home" replace />} />
 
         {/* === RUTAS ADMINISTRATIVAS === */}
         {isAdmin && (

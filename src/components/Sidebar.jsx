@@ -6,7 +6,8 @@ import { supabase } from '../lib/supabase';
 export default function Sidebar() {
   const handleLogout = async () => {
      await supabase.auth.signOut();
-     window.location.reload();
+     localStorage.removeItem('custom_session');
+     window.location.href = '/';
   };
 
   return (
