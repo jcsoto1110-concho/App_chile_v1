@@ -44,7 +44,7 @@ function RouterLogic() {
   }
 
   // Enrutamiento Inteligente Basado en Rol.
-  const isAdmin = profile.role === 'admin' || profile.role === 'supervisor';
+  const isAdmin = ['admin', 'supervisor', 'jefe'].includes(profile.role);
 
   return (
     <BrowserRouter>

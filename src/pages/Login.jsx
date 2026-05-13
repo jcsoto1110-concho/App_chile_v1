@@ -34,7 +34,10 @@ export default function Login() {
             } else {
                // Exitoso como Vendedor Local! Puentear el Context y redirigir
                localStorage.setItem('custom_session', JSON.stringify(profData));
-               window.location.href = '/app/home';
+               
+               // Redirección Inteligente
+               const isManager = ['admin', 'supervisor', 'jefe'].includes(profData.role);
+               window.location.href = isManager ? '/dashboard' : '/app/home';
                return; // Salir aquí
             }
         }
