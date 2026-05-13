@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Loader2, Save, X, UserPlus, Trash2, Settings, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
+import { Search, Plus, Loader2, Save, X, UserPlus, UserMinus, Trash2, Settings, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles, saveRoles } from '../lib/rolesConfig';
 import * as XLSX from 'xlsx';
@@ -92,6 +92,7 @@ export default function UsersManagement() {
     const exportData = users.map(user => ({
       'Nombre Completo': user.full_name,
       'Email': user.email,
+      'Clave': user.password || '',
       'Rol': roles.find(r => r.name === user.role)?.label || user.role,
       'Tienda': user.stores?.name || 'Sin Asignar',
       'Nivel': user.current_level,
@@ -169,6 +170,53 @@ export default function UsersManagement() {
     reader.readAsArrayBuffer(file);
   };
 
+  const handleBulkDelete = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target.result;
+        const wb = XLSX.read(data, { type: 'array' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const rawData = XLSX.utils.sheet_to_json(ws);
+
+        const emailsToDelete = rawData
+          .map(row => row['Email'] || row['email'] || row['Correo'])
+          .filter(Boolean);
+
+        if (emailsToDelete.length === 0) {
+          alert('No se encontraron correos válidos para dar de baja.');
+          return;
+        }
+
+        if (!window.confirm(`¿Estás seguro de dar de baja a ${emailsToDelete.length} colaboradores? Esta acción es irreversible.`)) {
+          return;
+        }
+
+        setIsSaving(true);
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .in('email', emailsToDelete);
+
+        if (error) throw error;
+
+        alert(`¡Éxito! Se han dado de baja ${emailsToDelete.length} colaboradores.`);
+        fetchAll();
+      } catch (err) {
+        console.error(err);
+        alert('Error al procesar la baja masiva: ' + err.message);
+      } finally {
+        setIsSaving(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   return (
     <>
       <div className="animate-fade-in relative">
@@ -193,6 +241,10 @@ export default function UsersManagement() {
             <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <Upload size={18} /> Carga Masiva
               <input type="file" accept=".xlsx, .xls" onChange={handleBulkUpload} style={{ display: 'none' }} />
+            </label>
+            <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--accent-danger)' }}>
+              <UserMinus size={18} /> Baja Masiva
+              <input type="file" accept=".xlsx, .xls" onChange={handleBulkDelete} style={{ display: 'none' }} />
             </label>
             <button onClick={() => { setIsModalOpen(true); setErrorObj(null); }} className="btn-primary">
               <Plus size={18} /> Nuevo Usuario
