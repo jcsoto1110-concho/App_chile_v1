@@ -40,7 +40,24 @@ export default function ChallengesManagement() {
 
   useEffect(() => {
     fetchChallenges();
+    // Cargar persistencia de formulario
+    const saved = localStorage.getItem('pending_challenge_form');
+    if (saved) {
+       try {
+          const parsed = JSON.parse(saved);
+          setFormData(parsed);
+          // Si había datos, reabrimos el modal automáticamente para que los vea
+          setIsModalOpen(true);
+       } catch (e) { console.error("Error al cargar persistencia", e); }
+    }
   }, []);
+
+  // Guardar cambios automáticamente
+  useEffect(() => {
+    if (formData.title || formData.description || formData.quiz_questions[0].question) {
+       localStorage.setItem('pending_challenge_form', JSON.stringify(formData));
+    }
+  }, [formData]);
 
   const handleSaveChallenge = async (e) => {
     e.preventDefault();
@@ -83,6 +100,7 @@ export default function ChallengesManagement() {
           is_flash: false, is_live: false,
           quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
        });
+       localStorage.removeItem('pending_challenge_form');
        fetchChallenges();
     } else {
        setErrorObj(error.message);

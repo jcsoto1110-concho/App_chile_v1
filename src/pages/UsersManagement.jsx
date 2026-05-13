@@ -39,7 +39,25 @@ export default function UsersManagement() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { 
+    fetchAll(); 
+    // Cargar persistencia
+    const saved = localStorage.getItem('pending_user_form');
+    if (saved) {
+       try {
+          const parsed = JSON.parse(saved);
+          setFormData(parsed);
+          setIsModalOpen(true);
+       } catch (e) { console.error("Error al cargar usuario pendiente", e); }
+    }
+  }, []);
+
+  // Guardar persistencia
+  useEffect(() => {
+    if (formData.full_name || formData.email) {
+       localStorage.setItem('pending_user_form', JSON.stringify(formData));
+    }
+  }, [formData]);
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
@@ -54,6 +72,7 @@ export default function UsersManagement() {
     if (!error) {
       setIsModalOpen(false);
       setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '' });
+      localStorage.removeItem('pending_user_form');
       fetchAll();
     } else {
       setErrorObj(error.message);
