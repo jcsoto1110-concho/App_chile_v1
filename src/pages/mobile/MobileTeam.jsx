@@ -186,13 +186,20 @@ export default function MobileTeam() {
                   {allActiveChallenges.map(ch => {
                      const prog = selectedMember.progress.find(p => p.challenge_id === ch.id);
                      return (
-                        <div key={ch.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={ch.id} 
+                           onClick={() => {
+                              if (!prog || prog.score === 0) {
+                                 const msg = prompt(`Escribe un feedback para ${selectedMember.full_name.split(' ')[0]} sobre "${ch.title}":`, !prog ? 'Te falta completar este reto.' : 'Reprobaste el reto, ¡haz un mayor esfuerzo la próxima vez!');
+                                 if (msg) handleNudge(selectedMember.id, selectedMember.full_name, msg);
+                              }
+                           }}
+                           style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: (!prog || prog.score === 0) ? 'pointer' : 'default' }}>
                            <span style={{ fontSize: '0.9rem' }}>{ch.title}</span>
                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               {!prog ? (
-                                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)' }}>Pendiente</span>
+                                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>Pendiente <Bell size={12}/></span>
                               ) : prog.score === 0 ? (
-                                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14}/> Reprobó</span>
+                                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14}/> Reprobó <Bell size={12}/></span>
                               ) : (
                                  <span style={{ fontSize: '0.75rem', color: '#00ff64', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14}/> Aprobó</span>
                               )}
@@ -203,10 +210,17 @@ export default function MobileTeam() {
                   {allActiveSims.map(sim => {
                      const sprog = selectedMember.simProgress.find(sp => sp.simulation_id === sim.id);
                      return (
-                        <div key={sim.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={sim.id} 
+                           onClick={() => {
+                              if (!sprog) {
+                                 const msg = prompt(`Escribe un recordatorio para ${selectedMember.full_name.split(' ')[0]} sobre "${sim.title}":`, 'Te falta realizar esta simulación IA.');
+                                 if (msg) handleNudge(selectedMember.id, selectedMember.full_name, msg);
+                              }
+                           }}
+                           style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: !sprog ? 'pointer' : 'default' }}>
                            <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}><Bot size={14}/> {sim.title}</span>
                            {!sprog ? (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)' }}>Sin iniciar</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>Sin iniciar <Bell size={12}/></span>
                            ) : (
                               <span style={{ fontSize: '0.75rem', color: '#00ff64', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14}/> Realizado</span>
                            )}
@@ -221,7 +235,7 @@ export default function MobileTeam() {
                      className="btn-primary" 
                      style={{ width: '100%', justifyContent: 'center', gap: '10px', height: '54px', fontSize: '1rem' }}
                   >
-                     <Bell size={20} /> Enviar Recordatorio
+                     <Bell size={20} /> Recordatorio General
                   </button>
                )}
             </div>
