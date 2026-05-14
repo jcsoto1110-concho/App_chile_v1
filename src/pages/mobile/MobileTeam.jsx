@@ -75,11 +75,13 @@ export default function MobileTeam() {
     fetchTeamData();
   }, [profile]);
 
-  const handleNudge = async (targetUserId, name) => {
+  const handleNudge = async (targetUserId, name, customMsg = null) => {
+     const defaultMsg = `¡Hola ${name.split(' ')[0]}! Tu Jefe de Tienda te ha enviado un recordatorio: Tienes misiones pendientes por completar (Retos o Simulaciones IA).`;
+     
      const { error } = await supabase.from('user_notifications').insert({
         user_id: targetUserId,
         manager_id: profile.id,
-        message: `¡Hola ${name.split(' ')[0]}! Tu Jefe de Tienda te ha enviado un recordatorio: Tienes misiones pendientes por completar (Retos o Simulaciones IA).`,
+        message: customMsg || defaultMsg,
         type: 'nudge'
      });
 
