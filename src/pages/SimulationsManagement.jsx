@@ -42,7 +42,26 @@ export default function SimulationsManagement() {
        if (data) setStores(data);
     }
     fetchStores();
+
+    // Cargar persistencia
+    const savedPrompt = localStorage.getItem('pending_sim_prompt');
+    const savedSim = localStorage.getItem('pending_sim_generated');
+    const savedDates = localStorage.getItem('pending_sim_dates');
+
+    if (savedPrompt) setIdeaPrompt(savedPrompt);
+    if (savedSim) {
+       setGeneratedSim(JSON.parse(savedSim));
+       setIsModalOpen(true);
+    }
+    if (savedDates) setDates(JSON.parse(savedDates));
   }, []);
+
+  // Guardar persistencia automáticamente
+  useEffect(() => {
+     if (ideaPrompt) localStorage.setItem('pending_sim_prompt', ideaPrompt);
+     if (generatedSim) localStorage.setItem('pending_sim_generated', JSON.stringify(generatedSim));
+     if (dates) localStorage.setItem('pending_sim_dates', JSON.stringify(dates));
+  }, [ideaPrompt, generatedSim, dates]);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -82,6 +101,12 @@ export default function SimulationsManagement() {
         setIdeaPrompt("");
         setGeneratedSim(null);
         setDates({ active_date: todayRaw, end_date: todayRaw, role_targets: [], store_ids: [] });
+        
+        // Limpiar persistencia
+        localStorage.removeItem('pending_sim_prompt');
+        localStorage.removeItem('pending_sim_generated');
+        localStorage.removeItem('pending_sim_dates');
+        
         fetchSimulations(); // Recargamos grid
     } else {
        setErrorObj(error.message);
@@ -231,7 +256,9 @@ export default function SimulationsManagement() {
                   <div className="animate-fade-in">
                     <h3 style={{ fontSize: '1.4rem', color: 'var(--accent-primary)', marginBottom: '8px' }}>{generatedSim.title}</h3>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                       <span className="badge warning">Rol: {generatedSim.role}</span>
+                       <span className="badge warning">
+                          Rol: {dates.role_targets.length === 0 ? (generatedSim.role || 'Todas las áreas') : (dates.role_targets.length > 1 ? 'Multiperfil' : roles.find(r=>r.name===dates.role_targets[0])?.label)}
+                       </span>
                        <span className="badge primary">{generatedSim.xp} XP Recompensa</span>
                     </div>
 
@@ -267,6 +294,13 @@ export default function SimulationsManagement() {
                           <div>
                              <label className="input-label" style={{ fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Público (Opcional)</label>
                              <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                   <input 
+                                      type="checkbox" 
+                                      checked={dates.role_targets.length === 0}
+                                      onChange={() => setDates({...dates, role_targets: []})}
+                                   /> Todas
+                                </label>
                                 {roles.map(role => (
                                    <label key={role.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
                                       <input 
@@ -287,6 +321,13 @@ export default function SimulationsManagement() {
                           <div>
                              <label className="input-label" style={{ fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Sedes (Opcional)</label>
                              <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                   <input 
+                                      type="checkbox" 
+                                      checked={dates.store_ids.length === 0}
+                                      onChange={() => setDates({...dates, store_ids: []})}
+                                   /> Todas
+                                </label>
                                 {stores.map(st => (
                                    <label key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
                                       <input 
