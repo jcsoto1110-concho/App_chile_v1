@@ -157,24 +157,36 @@ export default function MobileHome() {
       {challenges.length > 0 && !progressLog[challenges[0].id] && (
         <div style={{ marginBottom: '32px' }}>
            <h2 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Reto Destacado</h2>
-           <div style={{ 
-              background: 'linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(112,0,255,0.15) 100%)', 
-              border: '1px solid var(--accent-primary)',
-              borderRadius: '20px', 
-              padding: '24px',
-              position: 'relative',
-              overflow: 'hidden'
-           }}>
-              <Target size={40} color="var(--accent-primary)" style={{ opacity: 0.2, position: 'absolute', right: '-10px', top: '-10px', transform: 'scale(3)' }} />
-              <span className="badge primary" style={{ marginBottom: '12px', display: 'inline-block' }}>Nueva Misión</span>
-              <h3 style={{ fontSize: '1.3rem', marginBottom: '8px' }}>{challenges[0].title}</h3>
-              <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                 {challenges[0].description}
-              </p>
-              <button onClick={() => navigate('/app/quiz', { state: { challenge: challenges[0] } })} className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '8px' }}>
-                 <Play fill="currentColor" size={16} /> Iniciar Reto
-              </button>
-           </div>
+            <div style={{ 
+               background: 'linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(112,0,255,0.15) 100%)', 
+               border: '1px solid var(--accent-primary)',
+               borderRadius: '20px', 
+               padding: '24px',
+               position: 'relative',
+               overflow: 'hidden'
+            }}>
+               {/* IMAGEN DE ESCALADOR DE FONDO */}
+               <img 
+                 src={climberImg} 
+                 alt="" 
+                 style={{ 
+                   position: 'absolute', right: '-30px', top: '0', 
+                   height: '100%', width: 'auto',
+                   opacity: 0.25, objectFit: 'contain', 
+                   pointerEvents: 'none' 
+                 }} 
+               />
+               <div style={{ position: 'relative', zIndex: 2 }}>
+                  <span className="badge primary" style={{ marginBottom: '12px', display: 'inline-block' }}>Nueva Misión</span>
+                  <h3 style={{ fontSize: '1.3rem', marginBottom: '8px' }}>{challenges[0].title}</h3>
+                  <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                     {challenges[0].description}
+                  </p>
+                  <button onClick={() => navigate('/app/quiz', { state: { challenge: challenges[0] } })} className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '8px' }}>
+                     <Play fill="currentColor" size={16} /> Iniciar Reto
+                  </button>
+               </div>
+            </div>
         </div>
       )}
 
