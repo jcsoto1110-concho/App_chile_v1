@@ -12,10 +12,25 @@ export default function MobileHome() {
   const [storeKpi, setStoreKpi] = useState(null);
   const [loading, setLoading] = useState(true);
   const [localFitcoins, setLocalFitcoins] = useState(null); // FC en tiempo real desde DB
+  const [activeNotification, setActiveNotification] = useState(null);
 
   useEffect(() => {
     async function fetchActive() {
        const today = new Date().toISOString().split('T')[0];
+       
+       // 1. Notificaciones/Nudges del Jefe
+       if (profile?.id) {
+          const { data: notifs } = await supabase
+             .from('user_notifications')
+             .select('*')
+             .eq('user_id', profile.id)
+             .eq('is_read', false)
+             .order('created_at', { ascending: false })
+             .limit(1);
+          if (notifs && notifs.length > 0) {
+             setActiveNotification(notifs[0]);
+          }
+       }
        
        // Filtrado Avanzado: Retos que incluyan mi rol Y mi tienda (o sean globales)
        let query = supabase.from('daily_challenges').select('*');
@@ -77,7 +92,38 @@ export default function MobileHome() {
   }, [profile]);
 
   return (
-    <div className="animate-fade-in" style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
+    <div className="animate-fade-in" style={{ padding: '24px 20px', overflowY: 'auto', flex: 1, position: 'relative' }}>
+      
+      {/* NOTIFICACIÓN / NUDGE DEL JEFE */}
+      {activeNotification && (
+         <div style={{
+            background: 'linear-gradient(135deg, var(--accent-primary), #00ff64)',
+            borderRadius: '20px',
+            padding: '20px',
+            marginBottom: '24px',
+            color: '#000',
+            position: 'relative',
+            boxShadow: '0 10px 30px rgba(0,255,100,0.2)',
+            border: '2px solid rgba(255,255,255,0.3)'
+         }}>
+            <Bell size={24} style={{ position: 'absolute', right: '15px', top: '15px', opacity: 0.3 }} />
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800 }}>📣 Mensaje de tu Jefe</h4>
+            <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.4, fontWeight: 500 }}>{activeNotification.message}</p>
+            <button 
+               onClick={async () => {
+                  await supabase.from('user_notifications').update({ is_read: true }).eq('id', activeNotification.id);
+                  setActiveNotification(null);
+               }}
+               style={{ 
+                  marginTop: '12px', background: 'rgba(0,0,0,0.8)', color: '#fff', border: 'none', 
+                  padding: '6px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' 
+               }}
+            >
+               Entendido
+            </button>
+         </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
          <div>
             <p className="text-muted" style={{ fontSize: '0.85rem' }}>Hola, {profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</p>

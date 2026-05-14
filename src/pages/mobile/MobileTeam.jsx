@@ -53,8 +53,19 @@ export default function MobileTeam() {
     fetchTeam();
   }, [profile]);
 
-  const handleNudge = (name) => {
-     alert(`🔔 Recordatorio enviado a ${name}. Se le ha notificado que tiene tareas pendientes.`);
+  const handleNudge = async (targetUserId, name) => {
+     const { error } = await supabase.from('user_notifications').insert({
+        user_id: targetUserId,
+        manager_id: profile.id,
+        message: `¡Hola ${name.split(' ')[0]}! Tu Jefe de Tienda te ha enviado un recordatorio: Tienes misiones pendientes por completar (Retos o Simulaciones IA). ¡A por ello!`,
+        type: 'nudge'
+     });
+
+     if (!error) {
+        alert(`🔔 Recordatorio enviado a ${name}. Recibirá el aviso al ingresar a la App.`);
+     } else {
+        alert('Error al enviar recordatorio: ' + error.message);
+     }
   };
 
   const filteredTeam = team.filter(m => 
@@ -133,7 +144,7 @@ export default function MobileTeam() {
                       
                       {(!member.hasDoneChallenge || !member.hasDoneSimulation) && (
                          <button 
-                           onClick={() => handleNudge(member.full_name)}
+                           onClick={() => handleNudge(member.id, member.full_name)}
                            style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                          >
                             <Bell size={16} />
