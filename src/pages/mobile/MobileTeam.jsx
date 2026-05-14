@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Users, Award, TrendingUp, Search, Loader2, Bell, CheckCircle2, Circle, Zap } from 'lucide-react';
+import { Users, Award, TrendingUp, Search, Loader2, Bell, CheckCircle2, Circle, Zap, XCircle } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
 export default function MobileTeam() {
@@ -40,11 +40,15 @@ export default function MobileTeam() {
             .select('user_id')
             .in('user_id', members.map(m => m.id));
 
-         const enhancedTeam = members.map(m => ({
-            ...m,
-            hasDoneChallenge: progress?.some(p => p.user_id === m.id),
-            hasDoneSimulation: simProgress?.some(sp => sp.user_id === m.id)
-         }));
+         const enhancedTeam = members.map(m => {
+            const prog = progress?.find(p => p.user_id === m.id);
+            return {
+               ...m,
+               hasDoneChallenge: !!prog,
+               challengeScore: prog ? prog.score : null,
+               hasDoneSimulation: simProgress?.some(sp => sp.user_id === m.id)
+            };
+         });
 
          setTeam(enhancedTeam);
       }
@@ -132,25 +136,29 @@ export default function MobileTeam() {
                    </div>
 
                    {/* Estados de Tareas */}
-                   <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
-                      <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         {member.hasDoneChallenge ? <CheckCircle2 size={14} color="#00ff64" /> : <Circle size={14} color="var(--text-muted)" />}
-                         <span style={{ fontSize: '0.75rem', color: member.hasDoneChallenge ? '#fff' : 'var(--text-muted)' }}>Reto Diario</span>
-                      </div>
-                      <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         {member.hasDoneSimulation ? <CheckCircle2 size={14} color="#00ff64" /> : <Circle size={14} color="var(--text-muted)" />}
-                         <span style={{ fontSize: '0.75rem', color: member.hasDoneSimulation ? '#fff' : 'var(--text-muted)' }}>Simulador IA</span>
-                      </div>
-                      
-                      {(!member.hasDoneChallenge || !member.hasDoneSimulation) && (
-                         <button 
-                           onClick={() => handleNudge(member.id, member.full_name)}
-                           style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                         >
-                            <Bell size={16} />
-                         </button>
-                      )}
-                   </div>
+                    <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                       <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {member.hasDoneChallenge ? (
+                             member.challengeScore === 0 ? <XCircle size={14} color="#ff3232" /> : <CheckCircle2 size={14} color="#00ff64" />
+                          ) : <Circle size={14} color="var(--text-muted)" />}
+                          <span style={{ fontSize: '0.75rem', color: member.hasDoneChallenge ? '#fff' : 'var(--text-muted)' }}>
+                             Reto {member.hasDoneChallenge ? (member.challengeScore === 0 ? '(Reprobó)' : '(Aprobó)') : ''}
+                          </span>
+                       </div>
+                       <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {member.hasDoneSimulation ? <CheckCircle2 size={14} color="#00ff64" /> : <Circle size={14} color="var(--text-muted)" />}
+                          <span style={{ fontSize: '0.75rem', color: member.hasDoneSimulation ? '#fff' : 'var(--text-muted)' }}>Simulador IA</span>
+                       </div>
+                       
+                       {( !member.hasDoneChallenge || !member.hasDoneSimulation || member.challengeScore === 0 ) && (
+                          <button 
+                            onClick={() => handleNudge(member.id, member.full_name)}
+                            style={{ background: member.challengeScore === 0 ? 'var(--accent-danger)' : 'var(--accent-primary)', border: 'none', color: member.challengeScore === 0 ? '#fff' : '#000', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                             <Bell size={16} />
+                          </button>
+                       )}
+                    </div>
                 </div>
              ))
          )}
