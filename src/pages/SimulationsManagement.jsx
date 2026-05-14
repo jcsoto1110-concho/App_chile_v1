@@ -257,7 +257,7 @@ export default function SimulationsManagement() {
                     <h3 style={{ fontSize: '1.4rem', color: 'var(--accent-primary)', marginBottom: '8px' }}>{generatedSim.title}</h3>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
                        <span className="badge warning">
-                          Rol: {dates.role_targets.length === 0 ? (generatedSim.role || 'Todas las áreas') : (dates.role_targets.length > 1 ? 'Multiperfil' : roles.find(r=>r.name===dates.role_targets[0])?.label)}
+                          Rol: {dates.role_targets.length === 0 ? 'Todas las áreas' : (dates.role_targets.length > 1 ? 'Multiperfil' : roles.find(r=>r.name===dates.role_targets[0])?.label || dates.role_targets[0])}
                        </span>
                        <span className="badge primary">{generatedSim.xp} XP Recompensa</span>
                     </div>
