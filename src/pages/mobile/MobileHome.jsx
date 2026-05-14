@@ -16,9 +16,11 @@ export default function MobileHome() {
   useEffect(() => {
     async function fetchActive() {
        const today = new Date().toISOString().split('T')[0];
+       // Filtrado por Tienda: Retos globales (null) o de mi tienda específica
        const { data } = await supabase
           .from('daily_challenges')
           .select('*')
+          .or(`store_id.is.null${profile?.store_id ? `,store_id.eq.${profile.store_id}` : ''}`)
           .order('created_at', { ascending: false })
           .limit(10);
        

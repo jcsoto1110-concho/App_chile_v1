@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getRoles } from '../lib/rolesConfig';
 
 export default function ChallengesManagement() {
   const [challenges, setChallenges] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -20,6 +23,7 @@ export default function ChallengesManagement() {
     description: '',
     content_url: '',
     role_target: '',
+    store_id: '',
     reward_xp: 10,
     reward_fitcoins: 5,
     active_date: todayRaw,
@@ -40,6 +44,15 @@ export default function ChallengesManagement() {
 
   useEffect(() => {
     fetchChallenges();
+    setRoles(getRoles());
+    
+    // Cargar Tiendas
+    async function fetchStores() {
+       const { data } = await supabase.from('stores').select('*').order('name');
+       if (data) setStores(data);
+    }
+    fetchStores();
+
     // Cargar persistencia de formulario
     const saved = localStorage.getItem('pending_challenge_form');
     if (saved) {
@@ -81,6 +94,7 @@ export default function ChallengesManagement() {
        description: formData.description,
        content_url: formData.content_url || null,
        role_target: formData.role_target || null,   // null significa todos 
+       store_id: formData.store_id || null,         // null significa todas las tiendas
        reward_xp: parseInt(formData.reward_xp) || 10,
        reward_fitcoins: parseInt(formData.reward_fitcoins) || 5,
        active_date: formData.active_date,
@@ -96,7 +110,7 @@ export default function ChallengesManagement() {
        setIsModalOpen(false);
        setFormData({
           title: '', description: '', content_url: '',  
-          role_target: '', reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
+          role_target: '', store_id: '', reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
           is_flash: false, is_live: false,
           quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
        });
@@ -302,9 +316,23 @@ export default function ChallengesManagement() {
                            onChange={(e)=>setFormData({...formData, role_target: e.target.value})}
                         >
                            <option value="">Todas las áreas</option>
-                           <option value="asesor">Solo Asesores</option>
-                           <option value="cajero">Solo Cajeros</option>
-                           <option value="bodeguero">Solo Bodegueros</option>
+                           {roles.map(role => (
+                             <option key={role.name} value={role.name}>Solo {role.label}s</option>
+                           ))}
+                        </select>
+                     </div>
+
+                     <div className="input-group" style={{ flex: 1 }}>
+                        <label className="input-label">Sede / Tienda Destino</label>
+                        <select 
+                           className="input-field" 
+                           value={formData.store_id}
+                           onChange={(e)=>setFormData({...formData, store_id: e.target.value})}
+                        >
+                           <option value="">Todas las Tiendas (Global)</option>
+                           {stores.map(st => (
+                             <option key={st.id} value={st.id}>{st.name}</option>
+                           ))}
                         </select>
                      </div>
 
