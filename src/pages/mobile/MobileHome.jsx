@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle } from 'lucide-react';
+import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
 export default function MobileHome() {
