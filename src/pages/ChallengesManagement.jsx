@@ -22,8 +22,8 @@ export default function ChallengesManagement() {
     title: '',
     description: '',
     content_url: '',
-    role_target: '',
-    store_id: '',
+    role_targets: [],
+    store_ids: [],
     reward_xp: 10,
     reward_fitcoins: 5,
     active_date: todayRaw,
@@ -93,8 +93,8 @@ export default function ChallengesManagement() {
        title: formData.title,
        description: formData.description,
        content_url: formData.content_url || null,
-       role_target: formData.role_target || null,   // null significa todos 
-       store_id: formData.store_id || null,         // null significa todas las tiendas
+       role_target: formData.role_targets.length > 0 ? formData.role_targets : null,   // null significa todos 
+       store_ids: formData.store_ids.length > 0 ? formData.store_ids : null,         // null significa todas las tiendas
        reward_xp: parseInt(formData.reward_xp) || 10,
        reward_fitcoins: parseInt(formData.reward_fitcoins) || 5,
        active_date: formData.active_date,
@@ -307,36 +307,64 @@ export default function ChallengesManagement() {
                      </p>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                     <div className="input-group" style={{ flex: 1 }}>
-                        <label className="input-label">Público Destino</label>
-                        <select 
-                           className="input-field" 
-                           value={formData.role_target}
-                           onChange={(e)=>setFormData({...formData, role_target: e.target.value})}
-                        >
-                           <option value="">Todas las áreas</option>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                     <div>
+                        <label className="input-label" style={{ marginBottom: '12px', display: 'block' }}>Público Destino (Múltiple)</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                              <input 
+                                 type="checkbox" 
+                                 checked={formData.role_targets.length === 0}
+                                 onChange={() => setFormData({...formData, role_targets: []})}
+                              /> Todas
+                           </label>
                            {roles.map(role => (
-                             <option key={role.name} value={role.name}>Solo {role.label}s</option>
+                              <label key={role.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                 <input 
+                                    type="checkbox" 
+                                    checked={formData.role_targets.includes(role.name)}
+                                    onChange={() => {
+                                       const newRoles = formData.role_targets.includes(role.name)
+                                          ? formData.role_targets.filter(r => r !== role.name)
+                                          : [...formData.role_targets, role.name];
+                                       setFormData({...formData, role_targets: newRoles});
+                                    }}
+                                 /> {role.label}
+                              </label>
                            ))}
-                        </select>
+                        </div>
                      </div>
 
-                     <div className="input-group" style={{ flex: 1 }}>
-                        <label className="input-label">Sede / Tienda Destino</label>
-                        <select 
-                           className="input-field" 
-                           value={formData.store_id}
-                           onChange={(e)=>setFormData({...formData, store_id: e.target.value})}
-                        >
-                           <option value="">Todas las Tiendas (Global)</option>
+                     <div>
+                        <label className="input-label" style={{ marginBottom: '12px', display: 'block' }}>Sedes Destino (Múltiple)</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                              <input 
+                                 type="checkbox" 
+                                 checked={formData.store_ids.length === 0}
+                                 onChange={() => setFormData({...formData, store_ids: []})}
+                              /> Todas
+                           </label>
                            {stores.map(st => (
-                             <option key={st.id} value={st.id}>{st.name}</option>
+                              <label key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                 <input 
+                                    type="checkbox" 
+                                    checked={formData.store_ids.includes(st.id)}
+                                    onChange={() => {
+                                       const newStores = formData.store_ids.includes(st.id)
+                                          ? formData.store_ids.filter(s => s !== st.id)
+                                          : [...formData.store_ids, st.id];
+                                       setFormData({...formData, store_ids: newStores});
+                                    }}
+                                 /> {st.name}
+                              </label>
                            ))}
-                        </select>
+                        </div>
                      </div>
+                  </div>
 
-                     <div className="input-group" style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                     <div className="input-group">
                         <label className="input-label">Fecha Límite</label>
                         <input 
                            type="date"
