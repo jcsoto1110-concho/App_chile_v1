@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
+import climberImg from '../../assets/climber.png';
 
 export default function MobileHome() {
   const { profile } = useAuth();
