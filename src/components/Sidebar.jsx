@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Target, Bot, LogOut, Store } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Bot, LogOut, Store, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Sidebar() {
@@ -25,6 +25,7 @@ export default function Sidebar() {
           <SidebarLink to="/users" icon={<Users size={20} />} label="Usuarios Colaboradores" />
           <SidebarLink to="/challenges" icon={<Target size={20} />} label="Retos Diarios" />
           <SidebarLink to="/simulations" icon={<Bot size={20} />} label="Simulador IA" />
+          <SidebarLink to="/preguntame" icon={<BookOpen size={20} />} label="Pregúntame" />
        </nav>
 
        <div style={{ marginTop: 'auto' }}>

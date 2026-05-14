@@ -9,6 +9,7 @@ import UsersManagement from './pages/UsersManagement';
 import ChallengesManagement from './pages/ChallengesManagement';
 import SimulationsManagement from './pages/SimulationsManagement';
 import RolesConfig from './pages/RolesConfig';
+import PreguntameManagement from './pages/PreguntameManagement';
 import Login from './pages/Login';
 
 import MobileHome from './pages/mobile/MobileHome';
@@ -16,6 +17,7 @@ import MobileSimulator from './pages/mobile/MobileSimulator';
 import MobileProfile from './pages/mobile/MobileProfile';
 import MobileQuiz from './pages/mobile/MobileQuiz';
 import MobileTeam from './pages/mobile/MobileTeam';
+import MobileAssistant from './pages/mobile/MobileAssistant';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 
 // Layout Auxiliar para envolver el backoffice existente
@@ -63,6 +65,7 @@ function RouterLogic() {
              <Route path="/challenges" element={<AppLayout><ChallengesManagement /></AppLayout>} />
              <Route path="/simulations" element={<AppLayout><SimulationsManagement /></AppLayout>} />
              <Route path="/roles" element={<AppLayout><RolesConfig /></AppLayout>} />
+             <Route path="/preguntame" element={<AppLayout><PreguntameManagement /></AppLayout>} />
            </>
         )}
 
@@ -73,6 +76,7 @@ function RouterLogic() {
             <Route path="quiz" element={<MobileQuiz />} />
             <Route path="profile" element={<MobileProfile />} />
             <Route path="team" element={<MobileTeam />} />
+            <Route path="assistant" element={<MobileAssistant />} />
         </Route>
 
         <Route path="*" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/app/home" replace />} />

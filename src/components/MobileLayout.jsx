@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, User, AlertTriangle, Users } from 'lucide-react';
+import { Home, MessageSquare, User, AlertTriangle, Users, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
@@ -98,6 +98,9 @@ export default function MobileLayout() {
                  <NavItem to="/app/team" icon={<Users size={24} />} label="Mi Equipo" />
               )}
               <NavItem to="/app/simulator" icon={<MessageSquare size={24} />} label="Simulador" />
+              {!['admin', 'supervisor'].includes(profile?.role?.toLowerCase()) && (
+                 <NavItem to="/app/assistant" icon={<Sparkles size={24} />} label="Asistente" />
+              )}
               <NavItem to="/app/profile" icon={<User size={24} />} label="Mi Nivel" />
           </nav>
       </div>
