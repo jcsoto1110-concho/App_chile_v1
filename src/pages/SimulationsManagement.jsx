@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Bot, Target, Sparkles, X, Loader2, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateSimulationScenario } from '../lib/ai';
+import { getRoles } from '../lib/rolesConfig';
 
 export default function SimulationsManagement() {
   const [simulations, setSimulations] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -15,7 +18,12 @@ export default function SimulationsManagement() {
   const [errorObj, setErrorObj] = useState(null);
 
   const todayRaw = new Date().toISOString().split('T')[0];
-  const [dates, setDates] = useState({ active_date: todayRaw, end_date: todayRaw });
+  const [dates, setDates] = useState({ 
+    active_date: todayRaw, 
+    end_date: todayRaw,
+    role_targets: [],
+    store_ids: []
+  });
 
   async function fetchSimulations() {
     setLoadingList(true);
@@ -28,6 +36,12 @@ export default function SimulationsManagement() {
 
   useEffect(() => {
     fetchSimulations();
+    setRoles(getRoles());
+    async function fetchStores() {
+       const { data } = await supabase.from('stores').select('*').order('name');
+       if (data) setStores(data);
+    }
+    fetchStores();
   }, []);
 
   const handleGenerate = async (e) => {
@@ -52,7 +66,8 @@ export default function SimulationsManagement() {
     const { error } = await supabase.from('simulations').insert({
       title: generatedSim.title,
       scenario_description: ideaPrompt,
-      role_target: generatedSim.role,
+      role_target: dates.role_targets.length > 0 ? dates.role_targets : (generatedSim.role ? [generatedSim.role.toLowerCase()] : null),
+      store_ids: dates.store_ids.length > 0 ? dates.store_ids : null,
       ai_persona: generatedSim.persona,
       evaluation_criteria: generatedSim.evaluation_criteria_arr,
       reward_xp: generatedSim.xp,
@@ -63,11 +78,11 @@ export default function SimulationsManagement() {
     setIsGenerating(false);
     
     if (!error) {
-       setIsModalOpen(false);
-       setIdeaPrompt("");
-       setGeneratedSim(null);
-       setDates({ active_date: todayRaw, end_date: todayRaw });
-       fetchSimulations(); // Recargamos grid
+        setIsModalOpen(false);
+        setIdeaPrompt("");
+        setGeneratedSim(null);
+        setDates({ active_date: todayRaw, end_date: todayRaw, role_targets: [], store_ids: [] });
+        fetchSimulations(); // Recargamos grid
     } else {
        setErrorObj(error.message);
     }
@@ -234,15 +249,60 @@ export default function SimulationsManagement() {
                        </ul>
                     </div>
 
-                    {/* SECCIÓN FECHAS (NUEVA) */}
-                    <div style={{ display: 'flex', gap: '16px', background: 'rgba(255,100,50,0.1)', padding: '16px', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,100,50,0.2)' }}>
-                       <div className="input-group" style={{ flex: 1, margin: 0 }}>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Inicio</label>
-                          <input type="date" className="input-field" value={dates.active_date} onChange={e => setDates({...dates, active_date: e.target.value})} />
+                    {/* SECCIÓN FECHAS Y SEGMENTACIÓN (NUEVA) */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '24px' }}>
+                       
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                          <div className="input-group" style={{ margin: 0 }}>
+                             <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Inicio</label>
+                             <input type="date" className="input-field" value={dates.active_date} onChange={e => setDates({...dates, active_date: e.target.value})} />
+                          </div>
+                          <div className="input-group" style={{ margin: 0 }}>
+                             <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Cierre</label>
+                             <input type="date" className="input-field" min={dates.active_date} value={dates.end_date} onChange={e => setDates({...dates, end_date: e.target.value})} required/>
+                          </div>
                        </div>
-                       <div className="input-group" style={{ flex: 1, margin: 0 }}>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fecha Cierre (Caducidad)</label>
-                          <input type="date" className="input-field" min={dates.active_date} value={dates.end_date} onChange={e => setDates({...dates, end_date: e.target.value})} required/>
+
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div>
+                             <label className="input-label" style={{ fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Público (Opcional)</label>
+                             <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {roles.map(role => (
+                                   <label key={role.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                      <input 
+                                         type="checkbox" 
+                                         checked={dates.role_targets.includes(role.name)}
+                                         onChange={() => {
+                                            const newR = dates.role_targets.includes(role.name)
+                                               ? dates.role_targets.filter(r => r !== role.name)
+                                               : [...dates.role_targets, role.name];
+                                            setDates({...dates, role_targets: newR});
+                                         }}
+                                      /> {role.label}
+                                   </label>
+                                ))}
+                             </div>
+                          </div>
+
+                          <div>
+                             <label className="input-label" style={{ fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Sedes (Opcional)</label>
+                             <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {stores.map(st => (
+                                   <label key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                      <input 
+                                         type="checkbox" 
+                                         checked={dates.store_ids.includes(st.id)}
+                                         onChange={() => {
+                                            const newS = dates.store_ids.includes(st.id)
+                                               ? dates.store_ids.filter(s => s !== st.id)
+                                               : [...dates.store_ids, st.id];
+                                            setDates({...dates, store_ids: newS});
+                                         }}
+                                      /> {st.name}
+                                   </label>
+                                ))}
+                             </div>
+                          </div>
                        </div>
                     </div>
 
