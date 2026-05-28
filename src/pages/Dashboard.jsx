@@ -18,49 +18,54 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function fetchDashboard() {
-      const isStoreManager = ['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(userProfile?.role?.toLowerCase()) && userProfile?.role !== 'admin';
-      const myStoreId = userProfile?.store_id;
+      try {
+        const isStoreManager = ['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(userProfile?.role?.toLowerCase()) && userProfile?.role !== 'admin';
+        const myStoreId = userProfile?.store_id;
 
-      // Optimizamos extrayendo conteos básicos
-      const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-      const { count: chalCount } = await supabase.from('daily_challenges').select('*', { count: 'exact', head: true });
-      const { count: simsCount } = await supabase.from('simulations').select('*', { count: 'exact', head: true });
-      
-      let storesQuery = supabase.from('stores').select('*');
-      if (isStoreManager && myStoreId) storesQuery = storesQuery.eq('id', myStoreId);
-      const { data: storesList } = await storesQuery;
+        // Optimizamos extrayendo conteos básicos
+        const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        const { count: chalCount } = await supabase.from('daily_challenges').select('*', { count: 'exact', head: true });
+        const { count: simsCount } = await supabase.from('simulations').select('*', { count: 'exact', head: true });
+        
+        let storesQuery = supabase.from('stores').select('*');
+        if (isStoreManager && myStoreId) storesQuery = storesQuery.eq('id', myStoreId);
+        const { data: storesList } = await storesQuery;
 
-      let profilesQuery = supabase.from('profiles').select('id, store_id, current_xp, fitcoins, full_name, role');
-      if (isStoreManager && myStoreId) profilesQuery = profilesQuery.eq('store_id', myStoreId);
-      const { data: profilesList } = await profilesQuery;
+        let profilesQuery = supabase.from('profiles').select('id, store_id, current_xp, fitcoins, full_name, role');
+        if (isStoreManager && myStoreId) profilesQuery = profilesQuery.eq('store_id', myStoreId);
+        const { data: profilesList } = await profilesQuery;
 
-      let computedStores = [];
-      let computedEmployees = [];
+        let computedStores = [];
+        let computedEmployees = [];
 
-      if (storesList && profilesList) {
-         // Lógica para Sucursales
-         computedStores = storesList.map(st => {
-            const employees = profilesList.filter(p => p.store_id === st.id);
-            const totalXp = employees.reduce((sum, e) => sum + (e.current_xp || 0), 0);
-            const totalFc = employees.reduce((sum, e) => sum + (e.fitcoins || 0), 0);
-            return { ...st, xp: totalXp, fc: totalFc };
-         });
-         computedStores.sort((a, b) => (b.xp + b.fc) - (a.xp + a.fc));
+        if (storesList && profilesList) {
+           // Lógica para Sucursales
+           computedStores = storesList.map(st => {
+              const employees = profilesList.filter(p => p.store_id === st.id);
+              const totalXp = employees.reduce((sum, e) => sum + (e.current_xp || 0), 0);
+              const totalFc = employees.reduce((sum, e) => sum + (e.fitcoins || 0), 0);
+              return { ...st, xp: totalXp, fc: totalFc };
+           });
+           computedStores.sort((a, b) => (b.xp + b.fc) - (a.xp + a.fc));
 
-         // Lógica para Empleados Individuales Estrellas
-         computedEmployees = [...profilesList].sort((a, b) => 
-            ((b.current_xp || 0) + (b.fitcoins || 0)) - ((a.current_xp || 0) + (a.fitcoins || 0))
-         );
+           // Lógica para Empleados Individuales Estrellas
+           computedEmployees = [...profilesList].sort((a, b) => 
+              ((b.current_xp || 0) + (b.fitcoins || 0)) - ((a.current_xp || 0) + (a.fitcoins || 0))
+           );
+        }
+
+        setMetrics({
+           users: usersCount || 0,
+           challenges: chalCount || 0,
+           sims: simsCount || 0
+        });
+        setStores(computedStores.slice(0, 10));
+        setTopProfiles(computedEmployees.slice(0, 10));
+      } catch (err) {
+        console.error("Error loading dashboard:", err);
+      } finally {
+        setLoading(false);
       }
-
-      setMetrics({
-         users: usersCount || 0,
-         challenges: chalCount || 0,
-         sims: simsCount || 0
-      });
-      setStores(computedStores.slice(0, 10));
-      setTopProfiles(computedEmployees.slice(0, 10));
-      setLoading(false);
     }
     fetchDashboard();
   }, []);
