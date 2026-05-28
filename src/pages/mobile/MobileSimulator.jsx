@@ -64,8 +64,8 @@ export default function MobileSimulator() {
       setIsLocked(false);
       setMessages([
         { sender: 'system', text: `Iniciando escenario: ${sim.title}. ⚠️ Tienes un solo intento. Al enviar tu primer mensaje se bloquearán los reintentos.` },
-        { sender: 'bot', text: `*El cliente entra a la tienda con actitud: ${sim.ai_persona}*` },
-        { sender: 'bot', text: '¡Hola! Necesito ayuda por favor. ¿Alguien me puede atender?' }
+        { sender: 'system', text: `Tu contraparte actúa como: ${sim.ai_persona}` },
+        { sender: 'bot', text: '¡Hola! Estoy listo/a. ¿Comenzamos?' }
       ]);
     }
     setView('chat');
