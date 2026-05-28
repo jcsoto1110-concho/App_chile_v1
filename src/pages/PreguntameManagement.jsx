@@ -3,12 +3,13 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { BookOpen, Upload, Trash2, FileText, Loader2, CheckCircle, X, Plus } from 'lucide-react';
 
-// Extractor de texto desde PDF usando PDF.js CDN
+// Extractor de texto desde PDF, DOCX y TXT
 async function extractTextFromFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    const fileName = file.name.toLowerCase();
     
-    if (file.type === 'application/pdf') {
+    if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
       reader.onload = async (e) => {
         try {
           // Cargar PDF.js desde CDN si no está disponible
@@ -40,10 +41,35 @@ async function extractTextFromFile(file) {
         }
       };
       reader.readAsArrayBuffer(file);
+    } else if (fileName.endsWith('.docx')) {
+      reader.onload = async (e) => {
+        try {
+          // Cargar Mammoth.js desde CDN si no está disponible
+          if (!window.mammoth) {
+            await new Promise((res, rej) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+              script.onload = res;
+              script.onerror = rej;
+              document.head.appendChild(script);
+            });
+          }
+          
+          const arrayBuffer = e.target.result;
+          const result = await window.mammoth.extractRawText({ arrayBuffer });
+          resolve(result.value.trim());
+        } catch (err) {
+          reject(new Error('Error al leer DOCX: ' + err.message));
+        }
+      };
+      reader.readAsArrayBuffer(file);
     } else {
-      // TXT, MD, etc.
+      // TXT, MD, CSV, etc. Aseguramos que sea texto
+      if (!fileName.match(/\.(txt|md|csv)$/)) {
+         return reject(new Error('Formato no soportado. Usa PDF, DOCX, o TXT.'));
+      }
       reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+      reader.onerror = () => reject(new Error('Error al leer el archivo de texto'));
       reader.readAsText(file, 'UTF-8');
     }
   });
@@ -165,14 +191,14 @@ export default function PreguntameManagement() {
               ) : (
                 <>
                   <p style={{ fontWeight: 600 }}>Haz clic para seleccionar un archivo</p>
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>Soporta: PDF, TXT, MD</p>
+                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>Soporta: PDF, DOCX, TXT</p>
                 </>
               )}
             </div>
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.txt,.md"
+              accept=".pdf,.txt,.md,.docx"
               style={{ display: 'none' }}
               onChange={e => setSelectedFile(e.target.files[0] || null)}
             />
