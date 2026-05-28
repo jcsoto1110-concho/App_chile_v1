@@ -63,7 +63,7 @@ export default function MobileSimulator() {
     } else {
       setIsLocked(false);
       setMessages([
-        { sender: 'system', text: `Iniciando escenario: ${sim.title}. ⚠️ Tienes un solo intento. Al enviar tu primer mensaje se bloquearán los reintentos.` },
+        { sender: 'system', text: `Iniciando escenario: ${sim.title}. El reto se marcará como completado solo cuando logres cumplir el objetivo con el cliente.` },
         { sender: 'system', text: `Tu contraparte actúa como: ${sim.ai_persona}` },
         { sender: 'bot', text: '¡Hola! Estoy listo/a. ¿Comenzamos?' }
       ]);
@@ -80,20 +80,13 @@ export default function MobileSimulator() {
     setInputMsg('');
     setIsTyping(true);
 
-    if (!firstAttemptBurned) {
-      setFirstAttemptBurned(true);
-      try {
-        await supabase.from('user_simulation_progress').insert({ user_id: profile.id, simulation_id: scenario.id });
-      } catch (_) {}
-    }
-
     const aiResponse = await respondAsCustomer(scenario, snapshotHistory, userText);
     setMessages(prev => [...prev, { sender: 'bot', text: aiResponse.reply }]);
     setIsTyping(false);
 
     if (aiResponse.completed) {
       setIsCompleted(true);
-      setMessages(prev => [...prev, { sender: 'system', text: '¡Venta lograda! El cliente está satisfecho con tus respuestas.' }]);
+      setMessages(prev => [...prev, { sender: 'system', text: '¡Objetivo logrado! Has satisfecho los criterios de evaluación.' }]);
     }
   };
 
@@ -101,7 +94,17 @@ export default function MobileSimulator() {
     setRewarding(true);
     const newXp = (profile.current_xp || 0) + scenario.reward_xp;
     const newCoins = (profile.fitcoins || 0) + 15;
+    
+    // 1. Actualizamos perfil
     await supabase.from('profiles').update({ current_xp: newXp, fitcoins: newCoins }).eq('id', profile.id);
+    
+    // 2. Guardamos progreso RECIÉN al completar con éxito
+    await supabase.from('user_simulation_progress').insert({ 
+       user_id: profile.id, 
+       simulation_id: scenario.id,
+       score: 100
+    });
+
     setRewarding(false);
     setMessages(prev => [...prev, { sender: 'system', text: `¡Felicidades! Has ganado +${scenario.reward_xp} XP y +15 FitCoins.` }]);
     setIsCompleted(false);
