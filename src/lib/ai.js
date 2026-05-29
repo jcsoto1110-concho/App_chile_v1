@@ -64,21 +64,23 @@ export async function generateSimulationScenario(idea) {
   const knowledge = await getKnowledgeContext();
 
   const promptText = `
-Eres un creador experto de entrenamientos corporativos (roleplay) para colaboradores de una empresa de retail deportivo.
-El administrador quiere crear una simulación basada en la siguiente instrucción o caso: "${idea}".
+Eres un creador experto de entrenamientos corporativos interactivos para colaboradores de una empresa.
+El administrador quiere crear una simulación de entrenamiento paso a paso basada en la siguiente instrucción o caso: "${idea}".
 
-${knowledge ? `Utiliza la siguiente Base de Conocimiento de la empresa para hacer la simulación realista y apegada a los manuales y políticas oficiales:\n${knowledge}\n` : ''}
+${knowledge ? `Utiliza la siguiente Base de Conocimiento de la empresa para hacer la simulación realista y apegada a los manuales oficiales:\n${knowledge}\n` : ''}
+
+IMPORTANTE: La dinámica del entrenamiento es que el COLABORADOR es quien debe ejecutar el proceso o resolver el caso (describiendo qué hace o qué responde), y la IA (tú) actuará como un COACH, GUÍA o EVALUADOR experto que supervisa, corrige y guía paso a paso.
 
 Necesito que devuelvas la estructura de esta simulación estrictamente en el siguiente formato JSON, y NADA MÁS que el JSON (sin \`\`\`json ni texto extra):
 {
-  "title": "Nombre llamativo del escenario de simulación",
-  "role": "asesor | cajero | bodeguero" (deduce de la idea el rol al que va dirigido el entrenamiento),
-  "persona": "Descripción breve del personaje que TÚ (la IA) vas a tomar para interactuar con el empleado. Puede ser un cliente, un supervisor, un auditor, etc. (Ej: 'Supervisor estricto haciendo preguntas sobre el cierre de caja' o 'Cliente molesto')",
+  "title": "Nombre llamativo del entrenamiento práctico",
+  "role": "asesor | cajero | bodeguero" (deduce el rol al que va dirigido),
+  "persona": "Descripción del rol del Coach. Ej: 'Coach experto en caja que verifica paso a paso que el colaborador cumpla las políticas, corrigiéndolo constructivamente en caso de error.'",
   "xp": (Un valor numérico entre 50 y 150),
   "evaluation_criteria_arr": [
-     "Criterio 1 a cumplir para tener nota máxima",
-     "Criterio 2 a cumplir",
-     "Criterio 3 a cumplir"
+     "Paso 1 que el colaborador debe realizar y describir",
+     "Paso 2 que el colaborador debe realizar y describir",
+     "Paso 3 que el colaborador debe realizar y describir"
   ]
 }
 `;
@@ -90,22 +92,23 @@ export async function respondAsCustomer(scenario, messageHistory, userMessage) {
   const knowledge = await getKnowledgeContext();
 
   const systemPrompt = `
-Eres un personaje interactuando en un roleplay de entrenamiento corporativo con un empleado que está practicando.
-Tu rol y personalidad en este escenario es estrictamente el siguiente: "${scenario.ai_persona}". Mantenla en todo momento de forma inmersiva.
+Eres un Coach, Guía o Instructor experto interactuando en un entrenamiento práctico paso a paso con un colaborador de la empresa.
+Tu personalidad y objetivo en este entrenamiento es estrictamente el siguiente: "${scenario.ai_persona}". Mantenla de forma constructiva, profesional y alentadora.
 
-El empleado debe lograr cumplir estos criterios exactos para considerarse "Aprobado":
+El empleado debe lograr cumplir secuencialmente o en su totalidad estos pasos exactos (criterios) para aprobar el entrenamiento:
 ${criteriaList}
 
-${knowledge ? `A continuación, se te provee la Base de Conocimiento de la empresa. Úsala como tu verdad absoluta sobre políticas, garantías, características de productos o procedimientos para responder y evaluar al empleado de manera realista:\n${knowledge}\n` : ''}
+${knowledge ? `A continuación, se te provee la Base de Conocimiento de la empresa. Úsala como tu verdad absoluta sobre políticas o procedimientos para evaluar si lo que hace o dice el empleado es correcto:\n${knowledge}\n` : ''}
 
 Instrucciones:
-1. Responde al empleado de manera realista y natural según tu personaje (actúa como ese supervisor, auditor, cliente, etc. de forma conversacional y concisa).
-2. Analiza toda la conversación. Si el empleado ha satisfecho completamente tus Criterios de Evaluación de forma natural y apegado a los manuales, cambia la variable "completed" a true, de lo contrario manténla en false.
-3. Devuelve estrictamente un objeto JSON y nada más.
+1. Responde al empleado dándole feedback sobre la acción que acaba de describir o la respuesta que dio. Si es correcto, felicítalo e indícale la situación para que dé el siguiente paso. Si se equivoca, corrígelo constructivamente basándote en la Base de Conocimiento.
+2. NUNCA resuelvas el proceso por el empleado; hazle preguntas guía u oblígalo a pensar cuál es el paso correcto a seguir.
+3. Analiza toda la conversación. Si el empleado ya logró completar TODOS los pasos (criterios de evaluación) de forma correcta, despídete felicitándolo y cambia la variable "completed" a true. De lo contrario, mantenla en false.
+4. Devuelve estrictamente un objeto JSON y nada más.
 
 Formato esperado:
 {
-  "reply": "Tu línea de diálogo en respuesta al empleado",
+  "reply": "Tu retroalimentación, corrección o indicación del siguiente paso para el empleado",
   "completed": true o false
 }
 `;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Bot, Target, Sparkles, X, Loader2, Save } from 'lucide-react';
+import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateSimulationScenario } from '../lib/ai';
 import { getRoles } from '../lib/rolesConfig';
@@ -113,6 +113,19 @@ export default function SimulationsManagement() {
     }
   };
 
+  const handleDelete = async (id, title) => {
+    if (!confirm(`¿Estás seguro de eliminar el simulador "${title}"? Esta acción no se puede deshacer y borrará el progreso asociado a él.`)) return;
+    
+    // Primero, si lo hubiere, se podría eliminar el progreso en una tabla relacionada,
+    // pero si tienes ON DELETE CASCADE en la BD, supabase lo hará automático.
+    const { error } = await supabase.from('simulations').delete().eq('id', id);
+    if (!error) {
+      fetchSimulations();
+    } else {
+      alert("Error al eliminar: " + error.message);
+    }
+  };
+
   return (
     <>
       <div className="animate-fade-in relative">
@@ -145,8 +158,15 @@ export default function SimulationsManagement() {
             ) : (
               <div className="grid grid-2">
                  {active.map(sim => (
-                     <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                     <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px', position: 'relative' }}>
+                        <button 
+                          onClick={() => handleDelete(sim.id, sim.title)}
+                          style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,0,85,0.1)', border: '1px solid rgba(255,0,85,0.2)', color: 'var(--accent-danger)', padding: '6px', borderRadius: '8px', cursor: 'pointer', zIndex: 10 }}
+                          title="Eliminar Simulador"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', paddingRight: '36px' }}>
                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ width: '40px', height: '40px', background: 'rgba(112, 0, 255, 0.2)', borderRadius: '12px', display: 'grid', placeItems: 'center' }}>
                                  <Bot size={24} color="var(--accent-secondary)"/>
@@ -190,8 +210,14 @@ export default function SimulationsManagement() {
                 {showHistory && (
                   <div className="grid grid-2" style={{ opacity: 0.5 }}>
                     {expired.map(sim => (
-                      <div key={sim.id} className="glass-panel" style={{ padding: '24px', border: '1px solid rgba(255,0,0,0.15)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div key={sim.id} className="glass-panel" style={{ padding: '24px', border: '1px solid rgba(255,0,0,0.15)', position: 'relative' }}>
+                        <button 
+                          onClick={() => handleDelete(sim.id, sim.title)}
+                          style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingRight: '24px' }}>
                           <h3 style={{ fontSize: '1rem' }}>{sim.title}</h3>
                           <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
                         </div>
