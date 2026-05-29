@@ -17,6 +17,13 @@ export default function Sidebar() {
            <Target />
            SmartCoach
          </h2>
+         <div style={{ marginTop: '16px', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'inline-block' }}>
+            <img 
+               src="https://upload.wikimedia.org/wikipedia/commons/2/23/Marathon_sports_logo.png" 
+               alt="Marathon Sports" 
+               style={{ width: '130px', filter: 'brightness(0) invert(1)', display: 'block' }} 
+            />
+         </div>
        </div>
 
        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
