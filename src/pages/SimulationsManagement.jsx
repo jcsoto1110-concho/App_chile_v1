@@ -248,7 +248,7 @@ export default function SimulationsManagement() {
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                    <Bot color="var(--accent-primary)" /> Forjar Escenario
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                   <X />
                 </button>
              </div>

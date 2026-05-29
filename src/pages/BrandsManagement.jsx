@@ -121,50 +121,51 @@ export default function BrandsManagement() {
     setIsModalOpen(false);
     localStorage.removeItem(STORAGE_KEY);
     setFormData(initialForm);
-        setBrandStores([]);
-    // Fetch stores for a brand
-    const fetchBrandStores = async (brandId) => {
-      const { data, error } = await supabase.from('stores').select('*').eq('brand_id', brandId);
-      if (!error) setBrandStores(data);
-      else console.error('Error fetching stores', error);
-    };
+    setBrandStores([]);
+  };
 
-    // Open store modal (new or edit)
-    const handleOpenStoreModal = (store = null) => {
-      if (store) setStoreForm(store);
-      else setStoreForm({ id: null, name: '' });
-      setIsStoreModalOpen(true);
-    };
+  // Fetch stores for a brand
+  const fetchBrandStores = async (brandId) => {
+    const { data, error } = await supabase.from('stores').select('*').eq('brand_id', brandId);
+    if (!error) setBrandStores(data);
+    else console.error('Error fetching stores', error);
+  };
 
-    // Save store (insert or update)
-    const handleStoreSave = async (e) => {
-      e.preventDefault();
-      const isEditing = !!storeForm.id;
-      let res;
-      if (isEditing) {
-        res = await supabase.from('stores').update({ name: storeForm.name }).eq('id', storeForm.id);
-      } else {
-        res = await supabase.from('stores').insert({
-          name: storeForm.name,
-          brand_id: formData.id,
-          country: formData.country,
-        });
-      }
-      if (res.error) {
-        alert('Error guardando tienda: ' + res.error.message);
-      } else {
-        fetchBrandStores(formData.id);
-        setIsStoreModalOpen(false);
-      }
-    };
+  // Open store modal (new or edit)
+  const handleOpenStoreModal = (store = null) => {
+    if (store) setStoreForm(store);
+    else setStoreForm({ id: null, name: '' });
+    setIsStoreModalOpen(true);
+  };
 
-    // Delete store
-    const handleStoreDelete = async (id) => {
-      if (!window.confirm('¿Eliminar esta tienda?')) return;
-      const { error } = await supabase.from('stores').delete().eq('id', id);
-      if (error) alert('Error: ' + error.message);
-      else fetchBrandStores(formData.id);
-    };
+  // Save store (insert or update)
+  const handleStoreSave = async (e) => {
+    e.preventDefault();
+    const isEditing = !!storeForm.id;
+    let res;
+    if (isEditing) {
+      res = await supabase.from('stores').update({ name: storeForm.name }).eq('id', storeForm.id);
+    } else {
+      res = await supabase.from('stores').insert({
+        name: storeForm.name,
+        brand_id: formData.id,
+        country: formData.country,
+      });
+    }
+    if (res.error) {
+      alert('Error guardando tienda: ' + res.error.message);
+    } else {
+      fetchBrandStores(formData.id);
+      setIsStoreModalOpen(false);
+    }
+  };
+
+  // Delete store
+  const handleStoreDelete = async (id) => {
+    if (!window.confirm('¿Eliminar esta tienda?')) return;
+    const { error } = await supabase.from('stores').delete().eq('id', id);
+    if (error) alert('Error: ' + error.message);
+    else fetchBrandStores(formData.id);
   };
 
   const handleDelete = async (id) => {
@@ -220,7 +221,7 @@ export default function BrandsManagement() {
                           <img src={b.logo_url} alt="Logo" style={{ maxHeight: '30px', width: 'auto', display: 'block' }} />
                         </div>
                       </td>
-                      <td style={{ padding: '16px', fontWeight: 600, color: '#fff' }}>{b.name}</td>
+                      <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-main)' }}>{b.name}</td>
                       <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{b.country}</td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -260,7 +261,7 @@ export default function BrandsManagement() {
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Settings color="var(--accent-primary)" /> {formData.id ? 'Editar Marca' : 'Nueva Marca / Región'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                 <X />
               </button>
             </div>
@@ -315,8 +316,80 @@ export default function BrandsManagement() {
                   </button>
                 </div>
               </form>
+
+              {/* Locales de esta Marca */}
+              {formData.id && (
+                <div style={{ marginTop: '32px', borderTop: '1px solid var(--glass-border)', paddingTop: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-main)' }}>
+                      <Store size={18} color="var(--accent-primary)" /> Locales de esta Marca
+                    </h3>
+                    <button type="button" onClick={() => handleOpenStoreModal()} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                      <Plus size={14} /> Añadir Local
+                    </button>
+                  </div>
+
+                  {brandStores.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.03)', borderRadius: '12px' }}>
+                      No hay locales asociados a esta marca.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {brandStores.map(store => (
+                        <div key={store.id} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '10px 14px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--glass-border)', borderRadius: '10px'
+                        }}>
+                          <span style={{ fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-main)' }}>{store.name}</span>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button type="button" onClick={() => handleOpenStoreModal(store)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', opacity: 0.8, padding: '4px' }}>
+                              <Edit2 size={14} />
+                            </button>
+                            <button type="button" onClick={() => handleStoreDelete(store.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', opacity: 0.8, padding: '4px' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Tienda / Local ── */}
+      {isStoreModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 200,
+          display: 'grid', placeItems: 'center', padding: '16px'
+        }}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', background: 'var(--bg-dark)', padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+                <Store size={18} color="var(--accent-primary)" /> {storeForm.id ? 'Editar Local' : 'Nuevo Local'}
+              </h3>
+              <button onClick={() => setIsStoreModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
+                <X />
+              </button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <form onSubmit={handleStoreSave}>
+                <div className="input-group">
+                  <label className="input-label">Nombre del Local</label>
+                  <input type="text" className="input-field" value={storeForm.name}
+                    onChange={e => setStoreForm({ ...storeForm, name: e.target.value })}
+                    placeholder="Ej: Costanera Center" required autoFocus />
+                </div>
+                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '16px', justifyContent: 'center' }}>
+                  <Save size={16} /> Guardar Local
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -443,7 +443,7 @@ export default function UsersManagement() {
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus color="var(--accent-primary)" /> Registrar Integrante
               </h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                 <X />
               </button>
             </div>
@@ -515,7 +515,7 @@ export default function UsersManagement() {
                 </div>
               </form>
             </div>
-            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } select option { background: var(--bg-dark); color: #fff; }`}</style>
+            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } select option { background: var(--bg-card); color: var(--text-main); }`}</style>
           </div>
         </div>
       )}

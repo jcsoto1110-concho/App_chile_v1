@@ -217,7 +217,7 @@ export default function ChallengesManagement() {
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                    <Trophy color="var(--accent-primary)" /> Forjar Micro-Reto
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                   <X />
                 </button>
              </div>
@@ -478,7 +478,7 @@ export default function ChallengesManagement() {
 
              <style>{`
                @keyframes spin { 100% { transform: rotate(360deg); } }
-               select option { background: var(--bg-dark); color: #fff; }
+               select option { background: var(--bg-card); color: var(--text-main); }
              `}</style>
           </div>
         </div>
