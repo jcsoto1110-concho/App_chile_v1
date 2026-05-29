@@ -16,9 +16,24 @@ export default function BrandsManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState(null);
   
-  const initialForm = { id: null, name: '', country: '', primary_color: '#004882', logo_url: '' };
-  const [formData, setFormData] = useState(initialForm);
+  const STORAGE_KEY = 'brandFormData';
 
+  // Load saved data when modal opens (for new brand)
+  useEffect(() => {
+    if (isModalOpen && !formData.id) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setFormData(JSON.parse(saved));
+      }
+    }
+  }, [isModalOpen]);
+
+  // Save form data on change while modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData, isModalOpen]);
   useEffect(() => {
     if (!authLoading && !isSuperAdmin) {
        navigate('/');
