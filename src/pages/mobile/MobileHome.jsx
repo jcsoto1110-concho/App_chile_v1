@@ -227,7 +227,7 @@ export default function MobileHome() {
                 <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>No tienes contenido pendiente.</p>
              </div>
          ) : (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                  {challenges.map(ch => {
                     const status = progressLog[ch.id];
                     const isFailed = status === 'failed';
@@ -237,36 +237,39 @@ export default function MobileHome() {
                        <div key={ch.id} className="scale-on-tap" style={{
                           background: isFailed ? 'linear-gradient(135deg, rgba(255,0,85,0.08) 0%, rgba(255,0,85,0.01) 100%)' : 'rgba(255,255,255,0.03)',
                           border: isFailed ? '1px solid rgba(255,0,85,0.2)' : '1px solid rgba(255,255,255,0.08)',
-                          borderRadius: '20px', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          opacity: isCompleted ? 0.5 : 1, transition: 'transform 0.2s', backdropFilter: 'blur(10px)'
+                          borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column',
+                          opacity: isCompleted ? 0.5 : 1, transition: 'transform 0.2s', backdropFilter: 'blur(10px)',
+                          position: 'relative'
                        }}>
-                          <div style={{ flex: 1, paddingRight: '16px' }}>
-                             <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', lineHeight: 1.3, color: isFailed ? 'rgba(255,255,255,0.9)' : '#fff', fontWeight: 700 }}>{ch.title}</h4>
-                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-                                   <Zap size={14} fill="currentColor"/> {ch.reward_fitcoins}
-                                </span>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-                                   <Target size={14} /> {ch.reward_xp} XP
-                                </span>
-                             </div>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', lineHeight: 1.3, color: isFailed ? 'rgba(255,255,255,0.9)' : '#fff', fontWeight: 700 }}>
+                             {ch.title}
+                          </h4>
+                          
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+                                <Zap size={12} fill="currentColor"/> {ch.reward_fitcoins}
+                             </span>
+                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+                                <Target size={12} /> {ch.reward_xp} XP
+                             </span>
                           </div>
                           
-                          {isCompleted ? (
-                             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,255,100,0.1)', display: 'grid', placeItems: 'center', color: '#00ff64' }}>
-                                <CheckCircle size={24} />
-                             </div>
-                          ) : isFailed ? (
-                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>Reprobado</span>
-                                <XCircle size={28} color="var(--accent-danger)" opacity={0.8} />
-                             </div>
-                          ) : (
-                             <button onClick={() => navigate('/app/quiz', { state: { challenge: ch } })} 
-                                style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-primary), #7000ff)', border: 'none', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,240,255,0.3)', flexShrink: 0 }}>
-                                <ChevronRight size={24} />
-                             </button>
-                          )}
+                          <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+                             {isCompleted ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00ff64', fontSize: '0.75rem', fontWeight: 700 }}>
+                                   <CheckCircle size={16} /> Hecho
+                                </div>
+                             ) : isFailed ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-danger)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                   <XCircle size={16} opacity={0.8} /> Reprobado
+                                </div>
+                             ) : (
+                                <button onClick={() => navigate('/app/quiz', { state: { challenge: ch } })} 
+                                   style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-primary), #7000ff)', border: 'none', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,240,255,0.3)' }}>
+                                   <ChevronRight size={18} />
+                                </button>
+                             )}
+                          </div>
                        </div>
                     )
                  })}
