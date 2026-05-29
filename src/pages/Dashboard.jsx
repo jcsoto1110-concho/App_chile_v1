@@ -5,7 +5,7 @@ import { utils, writeFile } from 'xlsx';
 import { useAuth } from '../lib/AuthContext';
 
 export default function Dashboard() {
-  const { profile: userProfile } = useAuth();
+  const { profile: userProfile, isSuperAdmin } = useAuth();
   const [metrics, setMetrics] = useState({ users: 0, challenges: 0, sims: 0 });
   const [stores, setStores] = useState([]);
   const [topProfiles, setTopProfiles] = useState([]);
@@ -21,18 +21,45 @@ export default function Dashboard() {
       try {
         const isStoreManager = ['admin', 'supervisor', 'jefe', 'jefe_de_tienda'].includes(userProfile?.role?.toLowerCase()) && userProfile?.role !== 'admin';
         const myStoreId = userProfile?.store_id;
+        const myBrandId = userProfile?.brand_id;
 
-        // Optimizamos extrayendo conteos básicos
-        const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-        const { count: chalCount } = await supabase.from('daily_challenges').select('*', { count: 'exact', head: true });
-        const { count: simsCount } = await supabase.from('simulations').select('*', { count: 'exact', head: true });
+        // Conteo de usuarios
+        let usersQuery = supabase.from('profiles').select('*', { count: 'exact', head: true });
+        if (!isSuperAdmin && myBrandId) {
+          usersQuery = usersQuery.eq('brand_id', myBrandId);
+        }
+        const { count: usersCount } = await usersQuery;
+
+        // Conteo de retos
+        let chalQuery = supabase.from('daily_challenges').select('*', { count: 'exact', head: true });
+        if (!isSuperAdmin && myBrandId) {
+          chalQuery = chalQuery.eq('brand_id', myBrandId);
+        }
+        const { count: chalCount } = await chalQuery;
+
+        // Conteo de simulaciones
+        let simsQuery = supabase.from('simulations').select('*', { count: 'exact', head: true });
+        if (!isSuperAdmin && myBrandId) {
+          simsQuery = simsQuery.eq('brand_id', myBrandId);
+        }
+        const { count: simsCount } = await simsQuery;
         
+        // Sucursales
         let storesQuery = supabase.from('stores').select('*');
-        if (isStoreManager && myStoreId) storesQuery = storesQuery.eq('id', myStoreId);
+        if (isStoreManager && myStoreId) {
+          storesQuery = storesQuery.eq('id', myStoreId);
+        } else if (!isSuperAdmin && myBrandId) {
+          storesQuery = storesQuery.eq('brand_id', myBrandId);
+        }
         const { data: storesList } = await storesQuery;
 
+        // Perfiles
         let profilesQuery = supabase.from('profiles').select('id, store_id, current_xp, fitcoins, full_name, role');
-        if (isStoreManager && myStoreId) profilesQuery = profilesQuery.eq('store_id', myStoreId);
+        if (isStoreManager && myStoreId) {
+          profilesQuery = profilesQuery.eq('store_id', myStoreId);
+        } else if (!isSuperAdmin && myBrandId) {
+          profilesQuery = profilesQuery.eq('brand_id', myBrandId);
+        }
         const { data: profilesList } = await profilesQuery;
 
         let computedStores = [];
@@ -68,7 +95,7 @@ export default function Dashboard() {
       }
     }
     fetchDashboard();
-  }, []);
+  }, [userProfile, isSuperAdmin]);
 
   const handleUpdateKPI = async (storeId) => {
      const store = stores.find(s => s.id === storeId);
