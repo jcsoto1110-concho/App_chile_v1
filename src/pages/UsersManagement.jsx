@@ -115,18 +115,23 @@ export default function UsersManagement() {
   };
 
   const exportToExcel = () => {
-    const exportData = users.map(user => ({
-      'Nombre Completo': user.full_name,
-      'Email': user.email,
-      'Clave': user.password || '',
-      'Rol': roles.find(r => r.name === user.role)?.label || user.role,
-      'Tienda': user.stores?.name || 'Sin Asignar',
-      'Nivel': user.current_level,
-      'XP': user.current_xp,
-      'FitCoins': user.fitcoins,
-      'Racha (Días)': user.streak_days,
-      'Fecha Registro': new Date(user.created_at).toLocaleDateString()
-    }));
+    const exportData = users.map(user => {
+      const userBrand = brands.find(b => b.id === user.brand_id);
+      return {
+        'Nombre Completo': user.full_name,
+        'Email': user.email,
+        'Clave': user.password || '',
+        'Rol': roles.find(r => r.name === user.role)?.label || user.role,
+        'Tienda': user.stores?.name || 'Sin Asignar',
+        'Marca': userBrand?.name || 'Sin Asignar',
+        'País': userBrand?.country || user.country || 'Sin Asignar',
+        'Nivel': user.current_level,
+        'XP': user.current_xp,
+        'FitCoins': user.fitcoins,
+        'Racha (Días)': user.streak_days,
+        'Fecha Registro': new Date(user.created_at).toLocaleDateString()
+      };
+    });
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
@@ -152,10 +157,19 @@ export default function UsersManagement() {
           const email = row['Email'] || row['Correo'] || row['email'];
           const roleLabel = row['Rol'] || row['Role'];
           const storeName = row['Tienda'] || row['Store'] || row['Sede'];
+          const brandName = row['Marca'] || row['Brand'];
+          const countryName = row['País'] || row['Pais'] || row['Country'];
           const password = row['Password'] || row['Clave'] || 'marathon2026';
 
           const foundRole = roles.find(r => r.label.toLowerCase() === String(roleLabel || '').toLowerCase());
           const role = foundRole ? foundRole.name : (roleLabel || 'asesor').toLowerCase();
+
+          const foundBrand = brands.find(b => 
+             b.name.toLowerCase() === String(brandName || '').toLowerCase() &&
+             b.country.toLowerCase() === String(countryName || '').toLowerCase()
+          );
+          const brand_id = foundBrand ? foundBrand.id : null;
+          const country = foundBrand ? foundBrand.country : (countryName || null);
 
           const foundStore = stores.find(s => s.name.toLowerCase() === String(storeName || '').toLowerCase());
           const store_id = foundStore ? foundStore.id : null;
@@ -167,6 +181,8 @@ export default function UsersManagement() {
             password: password,
             role: role,
             store_id: store_id,
+            brand_id: brand_id,
+            country: country,
             current_level: 1,
             current_xp: 0,
             fitcoins: 0,
