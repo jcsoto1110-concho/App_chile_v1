@@ -16,6 +16,9 @@ export default function BrandsManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState(null);
   
+  const initialForm = { id: null, name: '', country: '', primary_color: '#004882', logo_url: '' };
+  const [formData, setFormData] = useState(initialForm);
+
   const STORAGE_KEY = 'brandFormData';
 
   // Load saved data when modal opens (for new brand)
@@ -34,6 +37,9 @@ export default function BrandsManagement() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     }
   }, [formData, isModalOpen]);
+
+  // ... rest of file unchanged up to handleSave
+
   useEffect(() => {
     if (!authLoading && !isSuperAdmin) {
        navigate('/');
@@ -58,7 +64,13 @@ export default function BrandsManagement() {
     if (brand) {
       setFormData(brand);
     } else {
-      setFormData(initialForm);
+      // New brand: try to load previously saved draft from localStorage
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setFormData(JSON.parse(saved));
+      } else {
+        setFormData(initialForm);
+      }
     }
     setIsModalOpen(true);
   };
@@ -92,9 +104,18 @@ export default function BrandsManagement() {
     if (res.error) {
       setErrorObj(res.error.message);
     } else {
+      // Clear draft from localStorage
+      localStorage.removeItem(STORAGE_KEY);
       setIsModalOpen(false);
       fetchBrands();
     }
+  };
+
+  // Close modal manually and clear any draft
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    localStorage.removeItem(STORAGE_KEY);
+    setFormData(initialForm);
   };
 
   const handleDelete = async (id) => {
