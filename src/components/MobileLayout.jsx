@@ -85,9 +85,8 @@ export default function MobileLayout() {
           <nav style={{
              position: 'absolute', bottom: 0, left: 0, right: 0,
              height: '70px',
-             background: 'rgba(15, 17, 21, 0.95)',
+             background: 'var(--accent-primary)',
              backdropFilter: 'blur(20px)',
-             borderTop: '1px solid rgba(255,255,255,0.1)',
              display: 'flex',
              justifyContent: 'space-around',
              alignItems: 'center',
@@ -112,18 +111,10 @@ function NavItem({ to, icon, label }) {
   return (
     <NavLink 
       to={to}
-      style={({ isActive }) => ({
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        textDecoration: 'none',
-        gap: '4px',
-        color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)',
-        transition: 'all var(--transition-smooth)'
-      })}
+      className={({ isActive }) => isActive ? 'mobile-nav-item active' : 'mobile-nav-item'}
     >
       {icon}
-      <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: '0.75rem' }}>{label}</span>
     </NavLink>
   );
 }
