@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles } from '../lib/rolesConfig';
+import { useAuth } from '../lib/AuthContext';
 
 export default function ChallengesManagement() {
+  const { profile, isSuperAdmin } = useAuth();
   const [challenges, setChallenges] = useState([]);
   const [roles, setRoles] = useState([]);
   const [stores, setStores] = useState([]);
@@ -35,7 +37,11 @@ export default function ChallengesManagement() {
 
   async function fetchChallenges() {
     setLoading(true);
-    const { data, error } = await supabase.from('daily_challenges').select('*').order('active_date', { ascending: false });
+    let query = supabase.from('daily_challenges').select('*').order('active_date', { ascending: false });
+    if (!isSuperAdmin && profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data, error } = await query;
     if (!error && data) {
        setChallenges(data);
     }
@@ -48,7 +54,11 @@ export default function ChallengesManagement() {
     
     // Cargar Tiendas
     async function fetchStores() {
-       const { data } = await supabase.from('stores').select('*').order('name');
+       let query = supabase.from('stores').select('*').order('name');
+       if (!isSuperAdmin && profile?.brand_id) {
+          query = query.eq('brand_id', profile.brand_id);
+       }
+       const { data } = await query;
        if (data) setStores(data);
     }
     fetchStores();
@@ -63,7 +73,7 @@ export default function ChallengesManagement() {
           setIsModalOpen(true);
        } catch (e) { console.error("Error al cargar persistencia", e); }
     }
-  }, []);
+  }, [profile]);
 
   // Guardar cambios automáticamente
   useEffect(() => {
@@ -89,6 +99,8 @@ export default function ChallengesManagement() {
         }));
     }
 
+    const targetBrandId = profile?.brand_id || null;
+    const targetCountry = profile?.brands?.country || profile?.country || 'Chile';
     const { error } = await supabase.from('daily_challenges').insert({
        title: formData.title,
        description: formData.description,
@@ -101,7 +113,9 @@ export default function ChallengesManagement() {
        end_date: formData.end_date,
        is_flash: formData.is_flash,
        is_live: formData.is_live,
-       quiz_data: quizData
+       quiz_data: quizData,
+       brand_id: targetBrandId,
+       country: targetCountry
     });
 
     setIsSaving(false);

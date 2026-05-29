@@ -35,6 +35,9 @@ export default function MobileHome() {
        
        // Filtrado Avanzado: Retos que incluyan mi rol Y mi tienda (o sean globales)
        let query = supabase.from('daily_challenges').select('*');
+       if (profile?.brand_id) {
+          query = query.eq('brand_id', profile.brand_id);
+       }
        
        if (profile?.role) {
           query = query.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);

@@ -76,7 +76,7 @@ async function extractTextFromFile(file) {
 }
 
 export default function PreguntameManagement() {
-  const { profile } = useAuth();
+  const { profile, isSuperAdmin } = useAuth();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -85,13 +85,17 @@ export default function PreguntameManagement() {
   const [selectedFile, setSelectedFile] = useState(null);
   const fileRef = useRef();
 
-  useEffect(() => { fetchDocs(); }, []);
+  useEffect(() => { fetchDocs(); }, [profile]);
 
   async function fetchDocs() {
     setLoading(true);
-    const { data } = await supabase.from('knowledge_documents')
+    let query = supabase.from('knowledge_documents')
       .select('id, title, original_filename, created_at')
       .order('created_at', { ascending: false });
+    if (!isSuperAdmin && profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data } = await query;
     setDocs(data || []);
     setLoading(false);
   }
@@ -112,11 +116,15 @@ export default function PreguntameManagement() {
         throw new Error('No se pudo extraer texto del documento. Asegúrate de que no sea una imagen escaneada.');
       }
 
+      const targetBrandId = profile?.brand_id || null;
+      const targetCountry = profile?.brands?.country || profile?.country || 'Chile';
       const { error } = await supabase.from('knowledge_documents').insert({
         title: title.trim(),
         original_filename: selectedFile.name,
         content: extractedText,
         uploaded_by: profile.id,
+        brand_id: targetBrandId,
+        country: targetCountry
       });
 
       if (error) throw new Error(error.message);

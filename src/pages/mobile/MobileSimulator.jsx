@@ -31,11 +31,14 @@ export default function MobileSimulator() {
     setLoadingList(true);
     const todayRaw = new Date().toISOString().split('T')[0];
 
-    const { data: sims } = await supabase.from('simulations')
+    let query = supabase.from('simulations')
       .select('*')
       .lte('active_date', todayRaw)
-      .gte('end_date', todayRaw)
-      .order('active_date', { ascending: true });
+      .gte('end_date', todayRaw);
+    if (profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data: sims } = await query.order('active_date', { ascending: true });
 
     if (!sims || sims.length === 0) { setSimulations([]); setLoadingList(false); return; }
 

@@ -19,17 +19,25 @@ export default function MobileTeam() {
     const today = new Date().toISOString().split('T')[0];
     
     // 1. Obtener TODOS los retos activos para la tienda
-    const { data: activeChallenges } = await supabase.from('daily_challenges')
+    let challengesQuery = supabase.from('daily_challenges')
       .select('*')
       .or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`)
       .gte('end_date', today);
+    if (profile?.brand_id) {
+      challengesQuery = challengesQuery.eq('brand_id', profile.brand_id);
+    }
+    const { data: activeChallenges } = await challengesQuery;
     setAllActiveChallenges(activeChallenges || []);
 
     // 2. Obtener TODAS las simulaciones activas
-    const { data: activeSims } = await supabase.from('simulations')
+    let simsQuery = supabase.from('simulations')
       .select('*')
       .or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`)
       .gte('end_date', today);
+    if (profile?.brand_id) {
+      simsQuery = simsQuery.eq('brand_id', profile.brand_id);
+    }
+    const { data: activeSims } = await simsQuery;
     setAllActiveSims(activeSims || []);
 
     // 3. Obtener Colaboradores

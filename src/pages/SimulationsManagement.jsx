@@ -3,8 +3,10 @@ import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2 } from 'lucide-re
 import { supabase } from '../lib/supabase';
 import { generateSimulationScenario } from '../lib/ai';
 import { getRoles } from '../lib/rolesConfig';
+import { useAuth } from '../lib/AuthContext';
 
 export default function SimulationsManagement() {
+  const { profile, isSuperAdmin } = useAuth();
   const [simulations, setSimulations] = useState([]);
   const [roles, setRoles] = useState([]);
   const [stores, setStores] = useState([]);
@@ -27,7 +29,11 @@ export default function SimulationsManagement() {
 
   async function fetchSimulations() {
     setLoadingList(true);
-    const { data, error } = await supabase.from('simulations').select('*').order('active_date', { ascending: false });
+    let query = supabase.from('simulations').select('*').order('active_date', { ascending: false });
+    if (!isSuperAdmin && profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data, error } = await query;
     if (!error && data) {
        setSimulations(data);
     }
@@ -38,7 +44,11 @@ export default function SimulationsManagement() {
     fetchSimulations();
     setRoles(getRoles());
     async function fetchStores() {
-       const { data } = await supabase.from('stores').select('*').order('name');
+       let query = supabase.from('stores').select('*').order('name');
+       if (!isSuperAdmin && profile?.brand_id) {
+          query = query.eq('brand_id', profile.brand_id);
+       }
+       const { data } = await query;
        if (data) setStores(data);
     }
     fetchStores();
@@ -82,6 +92,8 @@ export default function SimulationsManagement() {
   const saveSimulation = async () => {
     setIsGenerating(true); // Reusamos el estado de carga para el botón de guardado
     
+    const targetBrandId = profile?.brand_id || null;
+    const targetCountry = profile?.brands?.country || profile?.country || 'Chile';
     const { error } = await supabase.from('simulations').insert({
       title: generatedSim.title,
       scenario_description: ideaPrompt,
@@ -91,7 +103,9 @@ export default function SimulationsManagement() {
       evaluation_criteria: generatedSim.evaluation_criteria_arr,
       reward_xp: generatedSim.xp,
       active_date: dates.active_date,
-      end_date: dates.end_date
+      end_date: dates.end_date,
+      brand_id: targetBrandId,
+      country: targetCountry
     });
     
     setIsGenerating(false);

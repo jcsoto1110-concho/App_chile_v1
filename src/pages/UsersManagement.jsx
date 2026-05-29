@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Loader2, Save, X, UserPlus, UserMinus, Trash2, Settings, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles, saveRoles } from '../lib/rolesConfig';
+import { useAuth } from '../lib/AuthContext';
 import * as XLSX from 'xlsx';
 
 export default function UsersManagement() {
+  const { profile, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [stores, setStores] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -27,19 +29,38 @@ export default function UsersManagement() {
 
   async function fetchAll() {
     setLoading(true);
-    const { data: usersData } = await supabase
-      .from('profiles').select('*, stores(name)').order('created_at', { ascending: false });
+    let query = supabase
+      .from('profiles')
+      .select('*, stores(name), brands(name, country)')
+      .order('created_at', { ascending: false });
+    
+    if (!isSuperAdmin && profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data: usersData } = await query;
     if (usersData) setUsers(usersData);
 
-    const { data: storesData } = await supabase.from('stores').select('*');
+    let storesQuery = supabase.from('stores').select('*').order('name');
+    if (!isSuperAdmin && profile?.brand_id) {
+      storesQuery = storesQuery.eq('brand_id', profile.brand_id);
+    }
+    const { data: storesData } = await storesQuery;
     if (storesData) setStores(storesData);
 
-    const { data: brandsData } = await supabase.from('brands').select('*');
+    let brandsQuery = supabase.from('brands').select('*');
+    if (!isSuperAdmin && profile?.brand_id) {
+      brandsQuery = brandsQuery.eq('id', profile.brand_id);
+    }
+    const { data: brandsData } = await brandsQuery;
     if (brandsData) setBrands(brandsData);
 
     const configRoles = getRoles();
     setRoles(configRoles);
-    setFormData(prev => ({ ...prev, role: prev.role || configRoles[0]?.name || 'asesor' }));
+    setFormData(prev => ({ 
+      ...prev, 
+      role: prev.role || configRoles[0]?.name || 'asesor',
+      brand_id: prev.brand_id || (!isSuperAdmin && profile?.brand_id ? profile.brand_id : '')
+    }));
     setLoading(false);
   }
 
@@ -54,7 +75,7 @@ export default function UsersManagement() {
           setIsModalOpen(true);
        } catch (e) { console.error("Error al cargar usuario pendiente", e); }
     }
-  }, []);
+  }, [profile]); // Fetch when profile loads to filter correctly
 
   // Guardar persistencia
   useEffect(() => {
@@ -68,17 +89,25 @@ export default function UsersManagement() {
     setIsSaving(true);
     setErrorObj(null);
     const newUserId = crypto.randomUUID();
-    const selectedBrand = brands.find(b => b.id === formData.brand_id);
+    const targetBrandId = formData.brand_id || profile?.brand_id;
+    const selectedBrand = brands.find(b => b.id === targetBrandId);
     const { error } = await supabase.from('profiles').insert({
       id: newUserId, full_name: formData.full_name, email: formData.email,
       password: formData.password, role: formData.role, store_id: formData.store_id || null,
-      brand_id: formData.brand_id || null,
+      brand_id: targetBrandId || null,
       country: selectedBrand ? selectedBrand.country : null
     });
     setIsSaving(false);
     if (!error) {
       setIsModalOpen(false);
-      setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '', brand_id: '' });
+      setFormData({ 
+        full_name: '', 
+        email: '', 
+        password: '', 
+        role: roles[0]?.name || 'asesor', 
+        store_id: '', 
+        brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : '' 
+      });
       localStorage.removeItem('pending_user_form');
       fetchAll();
     } else {
@@ -91,6 +120,19 @@ export default function UsersManagement() {
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (error) alert('Error: ' + error.message);
     else fetchAll();
+  };
+
+  const handleOpenNewUserModal = () => {
+    setErrorObj(null);
+    setFormData({
+      full_name: '',
+      email: '',
+      password: '',
+      role: roles[0]?.name || 'asesor',
+      store_id: '',
+      brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : ''
+    });
+    setIsModalOpen(true);
   };
 
   // Gestión de Roles inline
@@ -288,7 +330,7 @@ export default function UsersManagement() {
               <UserMinus size={18} /> Baja Masiva
               <input type="file" accept=".xlsx, .xls" onChange={handleBulkDelete} style={{ display: 'none' }} />
             </label>
-            <button onClick={() => { setIsModalOpen(true); setErrorObj(null); }} className="btn-primary">
+            <button onClick={handleOpenNewUserModal} className="btn-primary">
               <Plus size={18} /> Nuevo Usuario
             </button>
           </div>
@@ -388,6 +430,8 @@ export default function UsersManagement() {
                     <th style={{ padding: '16px', fontWeight: 500 }}>Nombre</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Rol</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Tienda</th>
+                    <th style={{ padding: '16px', fontWeight: 500 }}>Marca</th>
+                    <th style={{ padding: '16px', fontWeight: 500 }}>País</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Nivel</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>FitCoins</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Acciones</th>
@@ -406,6 +450,8 @@ export default function UsersManagement() {
                         </span>
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{user.stores?.name || 'Sin Asignar'}</td>
+                      <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{user.brands?.name || 'Sin Asignar'}</td>
+                      <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{user.brands?.country || user.country || 'Sin Asignar'}</td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           Lv. {user.current_level}
@@ -474,7 +520,9 @@ export default function UsersManagement() {
                 <div className="input-group">
                   <label className="input-label">Marca y País</label>
                   <select className="input-field" value={formData.brand_id}
-                    onChange={e => setFormData({ ...formData, brand_id: e.target.value, store_id: '' })} required>
+                    onChange={e => setFormData({ ...formData, brand_id: e.target.value, store_id: '' })} 
+                    required 
+                    disabled={!isSuperAdmin}>
                     <option value="" disabled>Selecciona una marca...</option>
                     {brands.map(b => (
                       <option key={b.id} value={b.id}>{b.name} - {b.country}</option>

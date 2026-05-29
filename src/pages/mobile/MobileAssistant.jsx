@@ -61,9 +61,13 @@ export default function MobileAssistant() {
   }, [messages, isTyping]);
 
   async function loadDocs() {
-    const { data } = await supabase.from('knowledge_documents')
+    let query = supabase.from('knowledge_documents')
       .select('title, content')
       .order('created_at', { ascending: false });
+    if (profile?.brand_id) {
+      query = query.eq('brand_id', profile.brand_id);
+    }
+    const { data } = await query;
 
     if (!data || data.length === 0) {
       setHasDocs(false);
