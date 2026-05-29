@@ -22,7 +22,7 @@ export default function BrandsManagement() {
   // Stores management for a selected brand
   const [brandStores, setBrandStores] = useState([]);
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
-  const [storeForm, setStoreForm] = useState({ id: null, name: '' });
+  const [storeForm, setStoreForm] = useState({ id: null, name: '', location: '' });
 
   const STORAGE_KEY = 'brandFormData';
 
@@ -133,8 +133,8 @@ export default function BrandsManagement() {
 
   // Open store modal (new or edit)
   const handleOpenStoreModal = (store = null) => {
-    if (store) setStoreForm(store);
-    else setStoreForm({ id: null, name: '' });
+    if (store) setStoreForm({ id: store.id, name: store.name, location: store.location || '' });
+    else setStoreForm({ id: null, name: '', location: '' });
     setIsStoreModalOpen(true);
   };
 
@@ -143,11 +143,16 @@ export default function BrandsManagement() {
     e.preventDefault();
     const isEditing = !!storeForm.id;
     let res;
+    const finalLocation = storeForm.location.trim() || formData.country || 'Chile';
     if (isEditing) {
-      res = await supabase.from('stores').update({ name: storeForm.name }).eq('id', storeForm.id);
+      res = await supabase.from('stores').update({
+        name: storeForm.name,
+        location: finalLocation
+      }).eq('id', storeForm.id);
     } else {
       res = await supabase.from('stores').insert({
         name: storeForm.name,
+        location: finalLocation,
         brand_id: formData.id,
         country: formData.country,
       });
@@ -340,7 +345,9 @@ export default function BrandsManagement() {
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           padding: '10px 14px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--glass-border)', borderRadius: '10px'
                         }}>
-                          <span style={{ fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-main)' }}>{store.name}</span>
+                          <span style={{ fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                            {store.name} {store.location && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>({store.location})</span>}
+                          </span>
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button type="button" onClick={() => handleOpenStoreModal(store)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', opacity: 0.8, padding: '4px' }}>
                               <Edit2 size={14} />
@@ -385,7 +392,13 @@ export default function BrandsManagement() {
                     onChange={e => setStoreForm({ ...storeForm, name: e.target.value })}
                     placeholder="Ej: Costanera Center" required autoFocus />
                 </div>
-                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '16px', justifyContent: 'center' }}>
+                <div className="input-group">
+                  <label className="input-label">Ubicación / Ciudad</label>
+                  <input type="text" className="input-field" value={storeForm.location}
+                    onChange={e => setStoreForm({ ...storeForm, location: e.target.value })}
+                    placeholder="Ej: Mall del Sur o Santiago" required />
+                </div>
+                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '24px', justifyContent: 'center' }}>
                   <Save size={16} /> Guardar Local
                 </button>
               </form>
