@@ -2,13 +2,18 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Target, Bot, LogOut, Store, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Sidebar() {
+  const { profile } = useAuth();
+  
   const handleLogout = async () => {
      await supabase.auth.signOut();
      localStorage.removeItem('custom_session');
      window.location.href = '/';
   };
+
+  const brandLogo = profile?.brands?.logo_url || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEgchTEviXZbR9fCBYfcubPtikMqvbP86fZlVBBKb9Zz6VsrdOcpPG7m2HciKiivV0eQ&usqp=CAU';
 
   return (
     <aside style={{ width: '260px', height: '100vh', position: 'sticky', top: 0, padding: '24px', background: 'var(--accent-primary)', borderRight: 'none', display: 'flex', flexDirection: 'column' }}>
@@ -19,9 +24,9 @@ export default function Sidebar() {
          </h2>
          <div style={{ marginTop: '16px', display: 'inline-block', background: '#fff', padding: '4px', borderRadius: '4px' }}>
             <img 
-               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEgchTEviXZbR9fCBYfcubPtikMqvbP86fZlVBBKb9Zz6VsrdOcpPG7m2HciKiivV0eQ&usqp=CAU" 
-               alt="Marathon Sports" 
-               style={{ width: '150px', display: 'block' }} 
+               src={brandLogo} 
+               alt={profile?.brands?.name || 'Marca'} 
+               style={{ width: '150px', display: 'block', maxHeight: '50px', objectFit: 'contain' }} 
             />
          </div>
        </div>

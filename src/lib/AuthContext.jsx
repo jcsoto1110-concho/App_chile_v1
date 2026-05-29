@@ -21,8 +21,11 @@ export const AuthProvider = ({ children }) => {
              try {
                 const customProfile = JSON.parse(customSessionRaw);
                 // Extraer de DB fresca
-                const { data } = await supabase.from('profiles').select('*, stores(name)').eq('id', customProfile.id).single();
+                const { data } = await supabase.from('profiles').select('*, stores(name), brands(*)').eq('id', customProfile.id).single();
                 if (data) {
+                    if (data.brands?.primary_color) {
+                       document.documentElement.style.setProperty('--accent-primary', data.brands.primary_color);
+                    }
                     setProfile(data);
                     // Engañar al engine inyectando sesión simulada
                     setSession({ user: { id: data.id } });
@@ -41,7 +44,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Buscar si el usuario ya tiene su perfil amarrado
-      const { data } = await supabase.from('profiles').select('*, stores(name)').eq('id', userSession.user.id).single();
+      const { data } = await supabase.from('profiles').select('*, stores(name), brands(*)').eq('id', userSession.user.id).single();
       
       const adminEmails = ['admin@marathon.cl', 'jcsoto@gmail.com'];
       const isPrivileged = adminEmails.includes(userSession.user.email.toLowerCase());
@@ -51,6 +54,9 @@ export const AuthProvider = ({ children }) => {
           if (isPrivileged && data.role !== 'admin') {
               data.role = 'admin';
               await supabase.from('profiles').update({ role: 'admin' }).eq('id', data.id);
+          }
+          if (data.brands?.primary_color) {
+             document.documentElement.style.setProperty('--accent-primary', data.brands.primary_color);
           }
           setProfile(data);
       } else {
