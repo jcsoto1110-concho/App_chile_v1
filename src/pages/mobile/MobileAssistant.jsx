@@ -76,7 +76,7 @@ export default function MobileAssistant() {
 
     setMessages([{
       role: 'assistant',
-      content: `¡Hola ${profile?.full_name?.split(' ')[0] || ''}! 👋 Soy tu Asistente. Tengo acceso a **${data.length} documento${data.length > 1 ? 's' : ''}** internos.\n\n¿En qué puedo ayudarte hoy?`
+      content: `¡Hola ${profile?.full_name?.split(' ')[0] || ''}! 👋 Soy tu Asistente.\n\n¿En qué puedo ayudarte hoy?`
     }]);
   }
 
