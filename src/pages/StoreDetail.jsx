@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 export default function StoreDetail() {
-  const { profile } = useAuth();
+  const { profile, isSuperAdmin } = useAuth();
   const [stores, setStores] = useState([]);
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [collaborators, setCollaborators] = useState([]);
@@ -17,7 +17,11 @@ export default function StoreDetail() {
 
   useEffect(() => {
     async function fetchStores() {
-      const { data, error } = await supabase.from('stores').select('*').order('name');
+      let query = supabase.from('stores').select('*').order('name');
+      if (!isSuperAdmin && profile?.brand_id) {
+        query = query.eq('brand_id', profile.brand_id);
+      }
+      const { data, error } = await query;
       if (!error && data) {
         setStores(data);
         if (data.length > 0) {
@@ -27,7 +31,7 @@ export default function StoreDetail() {
       setLoading(false);
     }
     fetchStores();
-  }, []);
+  }, [profile, isSuperAdmin]);
 
   useEffect(() => {
     if (selectedStoreId) {
@@ -41,17 +45,25 @@ export default function StoreDetail() {
       const today = new Date().toISOString().split('T')[0];
 
       // 1. Obtener TODOS los retos activos para la tienda
-      const { data: activeChallenges } = await supabase.from('daily_challenges')
+      let chalQuery = supabase.from('daily_challenges')
         .select('*')
         .or(`store_ids.is.null,store_ids.cs.{"${selectedStoreId}"}`)
         .gte('end_date', today);
+      if (!isSuperAdmin && profile?.brand_id) {
+        chalQuery = chalQuery.eq('brand_id', profile.brand_id);
+      }
+      const { data: activeChallenges } = await chalQuery;
       setAllActiveChallenges(activeChallenges || []);
 
       // 2. Obtener TODAS las simulaciones activas
-      const { data: activeSims } = await supabase.from('simulations')
+      let simsQuery = supabase.from('simulations')
         .select('*')
         .or(`store_ids.is.null,store_ids.cs.{"${selectedStoreId}"}`)
         .gte('end_date', today);
+      if (!isSuperAdmin && profile?.brand_id) {
+        simsQuery = simsQuery.eq('brand_id', profile.brand_id);
+      }
+      const { data: activeSims } = await simsQuery;
       setAllActiveSims(activeSims || []);
 
       // 3. Obtenemos perfiles de la tienda
