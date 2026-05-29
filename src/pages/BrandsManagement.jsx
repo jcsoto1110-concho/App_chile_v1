@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Save, X, Settings, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Save, X, Settings, Edit2, Trash2, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,11 @@ export default function BrandsManagement() {
   
   const initialForm = { id: null, name: '', country: '', primary_color: '#004882', logo_url: '' };
   const [formData, setFormData] = useState(initialForm);
+
+  // Stores management for a selected brand
+  const [brandStores, setBrandStores] = useState([]);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+  const [storeForm, setStoreForm] = useState({ id: null, name: '' });
 
   const STORAGE_KEY = 'brandFormData';
 
@@ -63,8 +68,8 @@ export default function BrandsManagement() {
     setErrorObj(null);
     if (brand) {
       setFormData(brand);
+      fetchBrandStores(brand.id);
     } else {
-      // New brand: try to load previously saved draft from localStorage
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         setFormData(JSON.parse(saved));
@@ -116,6 +121,50 @@ export default function BrandsManagement() {
     setIsModalOpen(false);
     localStorage.removeItem(STORAGE_KEY);
     setFormData(initialForm);
+        setBrandStores([]);
+    // Fetch stores for a brand
+    const fetchBrandStores = async (brandId) => {
+      const { data, error } = await supabase.from('stores').select('*').eq('brand_id', brandId);
+      if (!error) setBrandStores(data);
+      else console.error('Error fetching stores', error);
+    };
+
+    // Open store modal (new or edit)
+    const handleOpenStoreModal = (store = null) => {
+      if (store) setStoreForm(store);
+      else setStoreForm({ id: null, name: '' });
+      setIsStoreModalOpen(true);
+    };
+
+    // Save store (insert or update)
+    const handleStoreSave = async (e) => {
+      e.preventDefault();
+      const isEditing = !!storeForm.id;
+      let res;
+      if (isEditing) {
+        res = await supabase.from('stores').update({ name: storeForm.name }).eq('id', storeForm.id);
+      } else {
+        res = await supabase.from('stores').insert({
+          name: storeForm.name,
+          brand_id: formData.id,
+          country: formData.country,
+        });
+      }
+      if (res.error) {
+        alert('Error guardando tienda: ' + res.error.message);
+      } else {
+        fetchBrandStores(formData.id);
+        setIsStoreModalOpen(false);
+      }
+    };
+
+    // Delete store
+    const handleStoreDelete = async (id) => {
+      if (!window.confirm('¿Eliminar esta tienda?')) return;
+      const { error } = await supabase.from('stores').delete().eq('id', id);
+      if (error) alert('Error: ' + error.message);
+      else fetchBrandStores(formData.id);
+    };
   };
 
   const handleDelete = async (id) => {
