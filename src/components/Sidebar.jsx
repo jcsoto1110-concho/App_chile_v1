@@ -11,9 +11,9 @@ export default function Sidebar() {
   };
 
   return (
-    <aside style={{ width: '260px', height: '100vh', position: 'sticky', top: 0, padding: '24px', background: 'var(--bg-card)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+    <aside style={{ width: '260px', height: '100vh', position: 'sticky', top: 0, padding: '24px', background: 'var(--accent-primary)', borderRight: 'none', display: 'flex', flexDirection: 'column' }}>
        <div style={{ marginBottom: '40px', padding: '0 12px' }}>
-         <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+         <h2 style={{ margin: 0, fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', fontWeight: 800 }}>
            <Target />
            SmartCoach
          </h2>
@@ -29,7 +29,7 @@ export default function Sidebar() {
        </nav>
 
        <div style={{ marginTop: 'auto' }}>
-          <button onClick={handleLogout} className="btn-secondary" style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--text-muted)' }}>
+          <button onClick={handleLogout} className="btn-secondary" style={{ width: '100%', justifyContent: 'flex-start', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)' }}>
              <LogOut size={20} />
              Cerrar Sesión
           </button>
@@ -42,16 +42,7 @@ function SidebarLink({ to, icon, label }) {
   return (
     <NavLink
       to={to}
-      style={({ isActive }) => ({
-         display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px',
-         color: isActive ? '#fff' : 'var(--text-muted)',
-         background: isActive ? 'linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(112, 0, 255, 0.1))' : 'transparent',
-         borderLeft: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
-         textDecoration: 'none',
-         fontWeight: 500,
-         transition: 'all 0.2s',
-         fontSize: '0.95rem'
-      })}
+      className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
     >
        {icon}
        {label}

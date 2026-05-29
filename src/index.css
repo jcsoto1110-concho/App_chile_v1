@@ -238,16 +238,21 @@ h1, h2, h3, h4, h5 {
   text-decoration: none;
   font-weight: 500;
   transition: all var(--transition-fast);
+  border-bottom: 2px solid transparent; /* Prevent layout shift */
 }
 
-.nav-item:hover, .nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
+  border-bottom: 2px solid var(--accent-danger);
 }
 
 .nav-item.active {
   background: rgba(255, 255, 255, 0.2);
   border-left: 3px solid #ffffff;
+  border-bottom: 2px solid transparent;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .main-content {
