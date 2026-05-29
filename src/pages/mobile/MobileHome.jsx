@@ -98,17 +98,17 @@ export default function MobileHome() {
       {/* CABECERA (Sticky Glassmorphism) */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(9,9,11,0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
         padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '16px', background: 'linear-gradient(135deg, var(--accent-primary), #7000ff)', display: 'grid', placeItems: 'center', fontWeight: '800', fontSize: '1.2rem', color: '#fff', boxShadow: '0 4px 15px rgba(0,240,255,0.2)' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '16px', background: 'var(--accent-primary)', display: 'grid', placeItems: 'center', fontWeight: '800', fontSize: '1.2rem', color: '#fff', boxShadow: '0 4px 15px rgba(0,72,130,0.2)' }}>
                {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div>
-               <p style={{ fontSize: '0.8rem', margin: 0, color: 'rgba(255,255,255,0.6)' }}>Bienvenido de vuelta,</p>
-               <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: '#fff' }}>{profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</h1>
+               <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)' }}>Bienvenido de vuelta,</p>
+               <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</h1>
             </div>
          </div>
          <div style={{ 
@@ -127,10 +127,10 @@ export default function MobileHome() {
          {/* NOTIFICACIÓN / NUDGE DEL JEFE */}
          {activeNotification && (
             <div className="scale-on-tap" style={{
-               background: 'linear-gradient(135deg, var(--accent-primary), #00ff64)',
-               borderRadius: '20px', padding: '20px', marginTop: '24px', color: '#000',
-               position: 'relative', boxShadow: '0 10px 30px rgba(0,255,100,0.2)',
-               border: '2px solid rgba(255,255,255,0.3)', overflow: 'hidden'
+               background: 'linear-gradient(135deg, var(--accent-primary), #003666)',
+               borderRadius: '20px', padding: '20px', marginTop: '24px', color: '#fff',
+               position: 'relative', boxShadow: '0 10px 30px rgba(0,72,130,0.2)',
+               border: '2px solid rgba(255,255,255,0.1)', overflow: 'hidden'
             }}>
                <Bell size={64} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.1, transform: 'rotate(15deg)' }} />
                <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800 }}>📣 Mensaje de tu Jefe</h4>
@@ -141,7 +141,7 @@ export default function MobileHome() {
                      setActiveNotification(null);
                   }}
                   style={{ 
-                     marginTop: '16px', background: 'rgba(0,0,0,0.85)', color: '#fff', border: 'none', 
+                     marginTop: '16px', background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none', 
                      padding: '10px 20px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' 
                   }}
                >
@@ -152,30 +152,29 @@ export default function MobileHome() {
 
          {/* KPI DASHBOARD CARD */}
          {storeKpi && storeKpi.monthly_sales_goal > 0 && (
-            <div className="glass-panel" style={{ margin: '24px 0', padding: '24px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-               <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--accent-primary)', opacity: 0.15, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
-               <h3 style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="glass-panel" style={{ margin: '24px 0', padding: '24px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
+               <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--accent-primary)', opacity: 0.05, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
+               <h3 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <TrendingUp size={16} color="var(--accent-primary)" /> Objetivo de Sucursal
                </h3>
                
                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, background: 'linear-gradient(90deg, #fff, #bbb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  <span style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
                      {Math.round(((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%
                   </span>
-                  <span style={{ fontSize: '0.85rem', color: '#00ff64', marginBottom: '8px', fontWeight: 600 }}>Completado</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', marginBottom: '8px', fontWeight: 700 }}>Completado</span>
                </div>
 
-               <div style={{ background: 'rgba(255,255,255,0.05)', height: '12px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+               <div style={{ background: 'rgba(0,0,0,0.05)', height: '12px', borderRadius: '6px', overflow: 'hidden', marginBottom: '12px' }}>
                    <div style={{ 
-                      background: 'linear-gradient(90deg, var(--accent-primary), #00ff64)', 
+                      background: 'var(--accent-primary)', 
                       width: `${Math.min(100, ((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%`, 
-                      height: '100%', borderRadius: '6px',
-                      boxShadow: '0 0 10px rgba(0,240,255,0.5)'
+                      height: '100%', borderRadius: '6px'
                    }}></div>
                </div>
                
-               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                   <span style={{ fontWeight: 600, color: '#fff' }}>Llevan: ${(storeKpi.current_sales || 0).toLocaleString()}</span>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                   <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Llevan: ${(storeKpi.current_sales || 0).toLocaleString()}</span>
                    <span>Faltan: ${(storeKpi.monthly_sales_goal - (storeKpi.current_sales || 0)).toLocaleString()}</span>
                </div>
             </div>
@@ -185,26 +184,25 @@ export default function MobileHome() {
       {/* HERO CARD: RETO DESTACADO */}
       {challenges.length > 0 && !progressLog[challenges[0].id] && (
         <div style={{ margin: '0 20px 32px' }}>
-           <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+           <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--text-main)' }}>
               <Star size={18} color="var(--accent-primary)" fill="var(--accent-primary)" /> Reto Destacado
            </h2>
            <div className="scale-on-tap" style={{
-              background: 'linear-gradient(135deg, rgba(0,240,255,0.15) 0%, rgba(112,0,255,0.3) 100%)',
-              border: '1px solid rgba(0,240,255,0.4)', borderRadius: '24px', padding: '32px 24px',
-              position: 'relative', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.4)'
+              background: 'linear-gradient(135deg, #004882 0%, #002855 100%)',
+              border: 'none', borderRadius: '24px', padding: '32px 24px',
+              position: 'relative', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,72,130,0.2)'
            }}>
-              <img src={climberImg} alt="" style={{ position: 'absolute', right: '-40px', top: '5%', height: '120%', opacity: 0.35, objectFit: 'contain', pointerEvents: 'none', filter: 'brightness(1.5) contrast(1.2)' }} />
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, var(--bg-dark) 45%, transparent 100%)', zIndex: 1 }}></div>
+              <img src={climberImg} alt="" style={{ position: 'absolute', right: '-40px', top: '5%', height: '120%', opacity: 0.2, objectFit: 'contain', pointerEvents: 'none' }} />
               
               <div style={{ position: 'relative', zIndex: 2, width: '80%' }}>
-                 <span style={{ background: 'var(--accent-primary)', color: '#000', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px', display: 'inline-block' }}>Nueva Misión</span>
-                 <h3 style={{ fontSize: '1.6rem', margin: '0 0 12px 0', lineHeight: 1.2, fontWeight: 800 }}>{challenges[0].title}</h3>
+                 <span style={{ background: 'var(--accent-danger)', color: '#fff', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px', display: 'inline-block' }}>Nueva Misión</span>
+                 <h3 style={{ fontSize: '1.6rem', margin: '0 0 12px 0', lineHeight: 1.2, fontWeight: 800, color: '#fff' }}>{challenges[0].title}</h3>
                  <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 24px 0', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {challenges[0].description}
                  </p>
                  <button onClick={() => navigate('/app/quiz', { state: { challenge: challenges[0] } })} 
                     className="btn-primary" 
-                    style={{ width: '100%', justifyContent: 'center', gap: '8px', padding: '16px', borderRadius: '16px', background: '#fff', color: '#000', boxShadow: '0 8px 20px rgba(255,255,255,0.2)' }}>
+                    style={{ width: '100%', justifyContent: 'center', gap: '8px', padding: '16px', borderRadius: '16px', background: '#fff', color: 'var(--accent-primary)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
                     <Play fill="currentColor" size={16} /> Comenzar Ahora
                  </button>
               </div>
@@ -214,7 +212,7 @@ export default function MobileHome() {
 
       {/* LISTA DE MÓDULOS TEÓRICOS */}
       <div style={{ padding: '0 20px 40px' }}>
-         <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+         <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--text-main)' }}>
             <BookOpen size={18} color="var(--accent-primary)" /> Módulos Teóricos
          </h2>
          
@@ -224,7 +222,7 @@ export default function MobileHome() {
              </div>
          ) : challenges.length === 0 ? (
              <div className="glass-panel" style={{ padding: '32px', textAlign: 'center' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>No tienes contenido pendiente.</p>
+                <p style={{ color: 'var(--text-muted)', margin: 0 }}>No tienes contenido pendiente.</p>
              </div>
          ) : (
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -235,13 +233,13 @@ export default function MobileHome() {
                     
                     return (
                        <div key={ch.id} className="scale-on-tap" style={{
-                          background: isFailed ? 'linear-gradient(135deg, rgba(255,0,85,0.08) 0%, rgba(255,0,85,0.01) 100%)' : 'rgba(255,255,255,0.03)',
-                          border: isFailed ? '1px solid rgba(255,0,85,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                          background: isFailed ? 'rgba(204,0,0,0.05)' : 'rgba(255,255,255,0.7)',
+                          border: isFailed ? '1px solid rgba(204,0,0,0.1)' : '1px solid rgba(0,0,0,0.05)',
                           borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column',
                           opacity: isCompleted ? 0.5 : 1, transition: 'transform 0.2s', backdropFilter: 'blur(10px)',
                           position: 'relative'
                        }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', lineHeight: 1.3, color: isFailed ? 'rgba(255,255,255,0.9)' : '#fff', fontWeight: 700 }}>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', lineHeight: 1.3, color: isFailed ? 'var(--accent-danger)' : 'var(--text-main)', fontWeight: 700 }}>
                              {ch.title}
                           </h4>
                           
@@ -256,16 +254,16 @@ export default function MobileHome() {
                           
                           <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
                              {isCompleted ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00ff64', fontSize: '0.75rem', fontWeight: 700 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-success)', fontSize: '0.75rem', fontWeight: 700 }}>
                                    <CheckCircle size={16} /> Hecho
                                 </div>
                              ) : isFailed ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-danger)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                   <XCircle size={16} opacity={0.8} /> Reprobado
+                                   <XCircle size={16} /> Reprobado
                                 </div>
                              ) : (
                                 <button onClick={() => navigate('/app/quiz', { state: { challenge: ch } })} 
-                                   style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-primary), #7000ff)', border: 'none', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,240,255,0.3)' }}>
+                                   style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-primary)', border: 'none', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,72,130,0.2)' }}>
                                    <ChevronRight size={18} />
                                 </button>
                              )}

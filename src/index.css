@@ -1,21 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Dark Premium Theme - Sporty */
-  --bg-dark: #0f1115;
-  --bg-card: rgba(26, 29, 36, 0.7);
-  --bg-card-hover: rgba(35, 39, 48, 0.8);
-  --accent-primary: #00f0ff; /* Neon Cyan */
-  --accent-secondary: #7000ff; /* Deep Purple */
-  --accent-success: #00ff88;
-  --accent-warning: #ffb800;
-  --accent-danger: #ff0055;
+  /* Light Corporate Theme - Marathon */
+  --bg-dark: #f4f6f8;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --accent-primary: #004882; /* Marathon Blue */
+  --accent-secondary: #003666; /* Darker Blue */
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #cc0000; /* Marathon Red */
   
-  --text-main: #f0f2f5;
-  --text-muted: #8b92a5;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
   
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
   
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -31,9 +31,7 @@
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.05) 0%, transparent 50%);
+  background-image: none;
   background-attachment: fixed;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
