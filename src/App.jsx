@@ -10,6 +10,7 @@ import ChallengesManagement from './pages/ChallengesManagement';
 import SimulationsManagement from './pages/SimulationsManagement';
 import RolesConfig from './pages/RolesConfig';
 import PreguntameManagement from './pages/PreguntameManagement';
+import BrandsManagement from './pages/BrandsManagement';
 import Login from './pages/Login';
 
 import MobileHome from './pages/mobile/MobileHome';
@@ -66,6 +67,7 @@ function RouterLogic() {
              <Route path="/simulations" element={<AppLayout><SimulationsManagement /></AppLayout>} />
              <Route path="/roles" element={<AppLayout><RolesConfig /></AppLayout>} />
              <Route path="/preguntame" element={<AppLayout><PreguntameManagement /></AppLayout>} />
+             <Route path="/admin/brands" element={<AppLayout><BrandsManagement /></AppLayout>} />
            </>
         )}
 

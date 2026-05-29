@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Target, Bot, LogOut, Store, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Bot, LogOut, Store, BookOpen, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 export default function Sidebar() {
-  const { profile } = useAuth();
+  const { profile, isSuperAdmin } = useAuth();
   
   const handleLogout = async () => {
      await supabase.auth.signOut();
@@ -38,6 +38,9 @@ export default function Sidebar() {
           <SidebarLink to="/challenges" icon={<Target size={20} />} label="Retos Diarios" />
           <SidebarLink to="/simulations" icon={<Bot size={20} />} label="Simulador IA" />
           <SidebarLink to="/preguntame" icon={<BookOpen size={20} />} label="Pregúntame" />
+          {isSuperAdmin && (
+            <SidebarLink to="/admin/brands" icon={<Settings size={20} />} label="Marcas y Países" />
+          )}
        </nav>
 
        <div style={{ marginTop: 'auto' }}>

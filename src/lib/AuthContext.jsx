@@ -91,8 +91,11 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const superAdminEmails = ['admin@marathon.cl', 'jcsoto@gmail.com'];
+  const isSuperAdmin = profile ? superAdminEmails.includes(profile.email.toLowerCase()) : false;
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading }}>
+    <AuthContext.Provider value={{ session, profile, loading, isSuperAdmin }}>
       {!loading && children}
     </AuthContext.Provider>
   );
