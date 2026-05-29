@@ -19,9 +19,9 @@ export default function Sidebar() {
          </h2>
          <div style={{ marginTop: '16px', display: 'inline-block' }}>
             <img 
-               src="https://media.marathon.store/images/hde/h28/h00/8926515298334.png" 
+               src="https://upload.wikimedia.org/wikipedia/commons/2/23/Marathon_sports_logo.png" 
                alt="Marathon Sports" 
-               style={{ width: '150px', display: 'block' }} 
+               style={{ width: '150px', display: 'block', filter: 'brightness(0) invert(1)' }} 
             />
          </div>
        </div>
