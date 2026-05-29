@@ -200,7 +200,7 @@ h1, h2, h3, h4, h5 {
 
 .sidebar {
   width: 280px;
-  background: rgba(15, 17, 21, 0.95);
+  background: var(--accent-primary); /* Marathon Blue Background */
   border-right: 1px solid var(--glass-border);
   padding: 24px;
   display: flex;
@@ -209,6 +209,7 @@ h1, h2, h3, h4, h5 {
   top: 0;
   height: 100vh;
   gap: 16px;
+  color: #ffffff;
 }
 
 .sidebar .logo {
@@ -218,6 +219,7 @@ h1, h2, h3, h4, h5 {
   font-size: 1.5rem;
   font-weight: 800;
   margin-bottom: 2rem;
+  color: #ffffff;
 }
 
 .sidebar-nav {
@@ -232,20 +234,20 @@ h1, h2, h3, h4, h5 {
   gap: 12px;
   padding: 12px 16px;
   border-radius: 12px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-weight: 500;
   transition: all var(--transition-fast);
 }
 
 .nav-item:hover, .nav-item.active {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(0, 240, 255, 0.1), transparent);
-  border-left: 3px solid var(--accent-primary);
+  background: rgba(255, 255, 255, 0.2);
+  border-left: 3px solid #ffffff;
 }
 
 .main-content {
