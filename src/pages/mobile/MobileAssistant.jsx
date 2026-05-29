@@ -74,11 +74,9 @@ export default function MobileAssistant() {
     const context = data.map(d => `[Documento: ${d.title}]\n${d.content}`).join('\n\n---\n\n');
     setDocsContext(context);
 
-    const docTitles = data.map(d => d.title).join(', ');
-
     setMessages([{
       role: 'assistant',
-      content: `¡Hola ${profile?.full_name?.split(' ')[0] || ''}! 👋 Soy tu Asistente. Tengo acceso a **${data.length} documento${data.length > 1 ? 's' : ''}** internos (${docTitles}).\n\n¿En qué puedo ayudarte hoy?`
+      content: `¡Hola ${profile?.full_name?.split(' ')[0] || ''}! 👋 Soy tu Asistente. Tengo acceso a **${data.length} documento${data.length > 1 ? 's' : ''}** internos.\n\n¿En qué puedo ayudarte hoy?`
     }]);
   }
 
