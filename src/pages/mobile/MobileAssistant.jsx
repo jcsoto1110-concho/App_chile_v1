@@ -119,16 +119,16 @@ export default function MobileAssistant() {
 
       {/* CABECERA */}
       <div style={{
-        background: 'linear-gradient(180deg, rgba(0,240,255,0.15) 0%, transparent 100%)',
+        background: 'linear-gradient(180deg, rgba(0,72,130,0.05) 0%, transparent 100%)',
         padding: '20px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
         display: 'flex', alignItems: 'center', gap: '12px'
       }}>
-        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--accent-primary), #7000ff)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent-primary)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
           <Sparkles size={20} color="#fff" />
         </div>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Tu Asistente</h2>
+          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Tu Asistente</h2>
           <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <BookOpen size={12} /> Basado en documentos internos
           </p>
@@ -143,24 +143,25 @@ export default function MobileAssistant() {
             maxWidth: '88%',
             background: msg.role === 'user'
               ? 'var(--accent-primary)'
-              : 'rgba(255,255,255,0.06)',
-            border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.1)',
+              : 'var(--bg-card)',
+            border: msg.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.1)',
             padding: '12px 16px',
             borderRadius: '18px',
             borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px',
             borderBottomLeftRadius: msg.role === 'assistant' ? '4px' : '18px',
-            color: msg.role === 'user' ? '#000' : '#fff',
+            color: msg.role === 'user' ? '#fff' : 'var(--text-main)',
             fontSize: '0.9rem',
             lineHeight: 1.5,
             fontWeight: msg.role === 'user' ? 600 : 400,
-            whiteSpace: 'pre-wrap'
+            whiteSpace: 'pre-wrap',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
           }}>
             {msg.content}
           </div>
         ))}
 
         {isTyping && (
-          <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.06)', padding: '12px 16px', borderRadius: '18px', borderBottomLeftRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <div style={{ alignSelf: 'flex-start', background: 'var(--bg-card)', border: '1px solid rgba(0,0,0,0.1)', padding: '12px 16px', borderRadius: '18px', borderBottomLeftRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             <Loader2 size={14} className="animate-spin" /> Buscando en documentos...
           </div>
         )}
@@ -168,7 +169,7 @@ export default function MobileAssistant() {
       </div>
 
       {/* INPUT */}
-      <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'var(--bg-dark)' }}>
+      <div style={{ padding: '16px', borderTop: '1px solid rgba(0,0,0,0.05)', background: 'var(--bg-dark)' }}>
         <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
@@ -176,17 +177,17 @@ export default function MobileAssistant() {
             onChange={e => setInput(e.target.value)}
             placeholder="¿Cuál es el procedimiento de...?"
             className="input-field"
-            style={{ margin: 0, flex: 1, borderRadius: '24px', paddingLeft: '20px' }}
+            style={{ margin: 0, flex: 1, borderRadius: '24px', paddingLeft: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid rgba(0,0,0,0.1)' }}
             disabled={isTyping}
           />
           <button
             type="submit"
             disabled={isTyping || !input.trim()}
             style={{
-              background: isTyping || !input.trim() ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, var(--accent-primary), #7000ff)',
+              background: isTyping || !input.trim() ? 'rgba(0,0,0,0.1)' : 'var(--accent-primary)',
               border: 'none', width: '44px', height: '44px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', cursor: isTyping ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+              color: isTyping || !input.trim() ? 'rgba(0,0,0,0.3)' : '#fff', cursor: isTyping ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
             }}
           >
             <Send size={18} style={{ transform: 'translateX(-1px)' }} />
