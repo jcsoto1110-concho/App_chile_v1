@@ -59,3 +59,15 @@ BEGIN
         UPDATE public.simulations SET brand_id = default_brand_id WHERE brand_id IS NULL;
     END IF;
 END $$;
+
+-- 5. Habilitar Row Level Security y políticas para super admin
+ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY superadmin_insert_brand ON public.brands FOR INSERT TO authenticated
+  WITH CHECK (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+
+CREATE POLICY superadmin_update_brand ON public.brands FOR UPDATE TO authenticated
+  USING (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+
+CREATE POLICY superadmin_delete_brand ON public.brands FOR DELETE TO authenticated
+  USING (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
