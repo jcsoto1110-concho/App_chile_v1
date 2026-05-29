@@ -63,11 +63,16 @@ END $$;
 -- 5. Habilitar Row Level Security y políticas para super admin
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 
+-- Aseguramos que no existan políticas con el mismo nombre
+DROP POLICY IF EXISTS superadmin_insert_brand ON public.brands;
+DROP POLICY IF EXISTS superadmin_update_brand ON public.brands;
+DROP POLICY IF EXISTS superadmin_delete_brand ON public.brands;
+
 CREATE POLICY superadmin_insert_brand ON public.brands FOR INSERT TO authenticated
-  WITH CHECK (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+  WITH CHECK (auth.email() = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
 
 CREATE POLICY superadmin_update_brand ON public.brands FOR UPDATE TO authenticated
-  USING (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+  USING (auth.email() = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
 
 CREATE POLICY superadmin_delete_brand ON public.brands FOR DELETE TO authenticated
-  USING (auth.email = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+  USING (auth.email() = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
