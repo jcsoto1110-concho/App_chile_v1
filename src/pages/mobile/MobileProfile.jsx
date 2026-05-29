@@ -40,24 +40,24 @@ export default function MobileProfile() {
        
        {/* Top: Info User */}
        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '20px' }}>
-           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #00f0ff, #7000ff)', display: 'grid', placeItems: 'center', marginBottom: '16px' }}>
-                <User size={40} color="#000" />
+           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--accent-primary)', display: 'grid', placeItems: 'center', marginBottom: '16px', boxShadow: '0 8px 24px rgba(0,72,130,0.2)' }}>
+                <User size={40} color="#fff" />
            </div>
-           <h1 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{profile.full_name}</h1>
+           <h1 style={{ fontSize: '1.5rem', marginBottom: '4px', color: 'var(--text-main)' }}>{profile.full_name}</h1>
            <span className="badge primary" style={{ marginBottom: '16px', textTransform: 'capitalize' }}>{profile.role} - Lv. {profile.current_level}</span>
            <p className="text-muted" style={{ fontSize: '0.9rem' }}>Sede: {profile.stores?.name || 'Local Central'}</p>
        </div>
 
        {/* Stats Cards */}
        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-           <div style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '16px', textAlign: 'center' }}>
+           <div style={{ background: 'var(--bg-card)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '20px', padding: '16px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
                <Zap size={24} color="var(--accent-primary)" style={{ margin: '0 auto 8px auto' }} />
-               <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{displayXp}</div>
+               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{displayXp}</div>
                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>XP Total</div>
            </div>
-           <div style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '16px', textAlign: 'center' }}>
+           <div style={{ background: 'var(--bg-card)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '20px', padding: '16px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
                <Flame size={24} color="var(--accent-warning)" style={{ margin: '0 auto 8px auto' }} />
-               <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{profile.streak_days || 0}</div>
+               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{profile.streak_days || 0}</div>
                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Días Seguidos</div>
            </div>
        </div>
@@ -65,8 +65,8 @@ export default function MobileProfile() {
        {/* Leaderboard - Dinámico desde Supabase */}
        <div>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
-               <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Liga Tienda</h2>
-               <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)' }}>Top {league.length}</span>
+               <h2 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--text-main)' }}>Liga Tienda</h2>
+               <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: 700 }}>Top {league.length}</span>
            </div>
 
            {league.length === 0 ? (
@@ -83,22 +83,23 @@ export default function MobileProfile() {
                      key={peer.id}
                      style={{
                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                       background: isMe ? 'rgba(0, 240, 255, 0.1)' : 'rgba(255,255,255,0.05)',
-                       border: isMe ? '1px solid var(--accent-primary)' : 'none',
-                       padding: '12px 16px', borderRadius: '16px'
+                       background: isMe ? 'var(--accent-primary)' : 'var(--bg-card)',
+                       border: isMe ? 'none' : '1px solid rgba(0,0,0,0.05)',
+                       padding: '12px 16px', borderRadius: '16px',
+                       boxShadow: isMe ? '0 8px 20px rgba(0,72,130,0.2)' : '0 2px 10px rgba(0,0,0,0.02)'
                      }}
                    >
                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                       <span style={{ fontWeight: 800, color: medal, minWidth: '20px' }}>{i + 1}</span>
-                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isMe ? 'linear-gradient(135deg, #00f0ff, #7000ff)' : '#333', display: 'grid', placeItems: 'center' }}>
-                         {isMe && <User size={16} color="#000" />}
+                       <span style={{ fontWeight: 800, color: isMe ? '#fff' : medal, minWidth: '20px' }}>{i + 1}</span>
+                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isMe ? 'rgba(255,255,255,0.2)' : 'var(--bg-dark)', display: 'grid', placeItems: 'center' }}>
+                         <User size={16} color={isMe ? '#fff' : 'var(--text-muted)'} />
                        </div>
-                       <span style={{ fontWeight: isMe ? 800 : 400 }}>
+                       <span style={{ fontWeight: isMe ? 800 : 600, color: isMe ? '#fff' : 'var(--text-main)' }}>
                          {isMe ? 'Tú' : peer.full_name}
                        </span>
                      </div>
-                     <span style={{ fontWeight: 800, color: isMe ? 'var(--accent-primary)' : '#fff' }}>
-                       {isMe ? displayXp : (peer.current_xp || 0)} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>xp</span>
+                     <span style={{ fontWeight: 800, color: isMe ? '#fff' : 'var(--text-main)' }}>
+                       {isMe ? displayXp : (peer.current_xp || 0)} <span style={{ fontSize: '0.7rem', color: isMe ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>xp</span>
                      </span>
                    </div>
                  );
@@ -112,7 +113,7 @@ export default function MobileProfile() {
            <button
              onClick={async () => { await supabase.auth.signOut(); localStorage.removeItem('custom_session'); window.location.href = '/'; }}
              className="btn-secondary"
-             style={{ width: '100%', justifyContent: 'center', borderColor: 'rgba(255,50,50,0.3)', color: 'var(--accent-danger)' }}
+             style={{ width: '100%', justifyContent: 'center', borderColor: 'rgba(204,0,0,0.2)', color: 'var(--accent-danger)', background: 'rgba(204,0,0,0.05)' }}
            >
               <LogOut size={18} /> Cerrar Sesión
            </button>
