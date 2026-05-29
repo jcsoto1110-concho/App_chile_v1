@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
   const [stores, setStores] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +16,7 @@ export default function UsersManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState(null);
   const [formData, setFormData] = useState({
-    full_name: '', email: '', password: '', role: '', store_id: ''
+    full_name: '', email: '', password: '', role: '', store_id: '', brand_id: ''
   });
 
   // Panel Config Roles (inline)
@@ -32,6 +33,9 @@ export default function UsersManagement() {
 
     const { data: storesData } = await supabase.from('stores').select('*');
     if (storesData) setStores(storesData);
+
+    const { data: brandsData } = await supabase.from('brands').select('*');
+    if (brandsData) setBrands(brandsData);
 
     const configRoles = getRoles();
     setRoles(configRoles);
@@ -64,14 +68,17 @@ export default function UsersManagement() {
     setIsSaving(true);
     setErrorObj(null);
     const newUserId = crypto.randomUUID();
+    const selectedBrand = brands.find(b => b.id === formData.brand_id);
     const { error } = await supabase.from('profiles').insert({
       id: newUserId, full_name: formData.full_name, email: formData.email,
       password: formData.password, role: formData.role, store_id: formData.store_id || null,
+      brand_id: formData.brand_id || null,
+      country: selectedBrand ? selectedBrand.country : null
     });
     setIsSaving(false);
     if (!error) {
       setIsModalOpen(false);
-      setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '' });
+      setFormData({ full_name: '', email: '', password: '', role: roles[0]?.name || 'asesor', store_id: '', brand_id: '' });
       localStorage.removeItem('pending_user_form');
       fetchAll();
     } else {
@@ -448,6 +455,17 @@ export default function UsersManagement() {
                     placeholder="Ej: ventas123" required />
                 </div>
 
+                <div className="input-group">
+                  <label className="input-label">Marca y País</label>
+                  <select className="input-field" value={formData.brand_id}
+                    onChange={e => setFormData({ ...formData, brand_id: e.target.value, store_id: '' })} required>
+                    <option value="" disabled>Selecciona una marca...</option>
+                    {brands.map(b => (
+                      <option key={b.id} value={b.id}>{b.name} - {b.country}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                   <div className="input-group" style={{ flex: 1 }}>
                     <label className="input-label">Rol Operativo</label>
@@ -462,9 +480,9 @@ export default function UsersManagement() {
                   <div className="input-group" style={{ flex: 1 }}>
                     <label className="input-label">Asignación de Tienda</label>
                     <select className="input-field" value={formData.store_id}
-                      onChange={e => setFormData({ ...formData, store_id: e.target.value })} required>
+                      onChange={e => setFormData({ ...formData, store_id: e.target.value })} required disabled={!formData.brand_id}>
                       <option value="" disabled>Selecciona una sede...</option>
-                      {stores.map(st => (
+                      {stores.filter(s => s.brand_id === formData.brand_id).map(st => (
                         <option key={st.id} value={st.id}>{st.name}</option>
                       ))}
                     </select>
