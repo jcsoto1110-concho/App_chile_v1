@@ -29,30 +29,53 @@ export default function UsersManagement() {
 
   async function fetchAll() {
     setLoading(true);
+    
+    // 1. Cargar marcas filtradas por el nivel de acceso del admin
+    let brandsQuery = supabase.from('brands').select('*');
+    if (!isSuperAdmin) {
+      if (profile?.brand_id) {
+        brandsQuery = brandsQuery.eq('id', profile.brand_id);
+      } else if (profile?.country) {
+        brandsQuery = brandsQuery.eq('country', profile.country);
+      }
+    }
+    const { data: brandsData } = await brandsQuery;
+    const loadedBrands = brandsData || [];
+    setBrands(loadedBrands);
+
+    // 2. Cargar perfiles/usuarios filtrados por marca o país
     let query = supabase
       .from('profiles')
       .select('*, stores(name), brands(name, country)')
       .order('created_at', { ascending: false });
     
-    if (!isSuperAdmin && profile?.brand_id) {
-      query = query.eq('brand_id', profile.brand_id);
+    if (!isSuperAdmin) {
+      if (profile?.brand_id) {
+        query = query.eq('brand_id', profile.brand_id);
+      } else if (profile?.country) {
+        query = query.eq('country', profile.country);
+      }
     }
     const { data: usersData } = await query;
     if (usersData) setUsers(usersData);
 
+    // 3. Cargar tiendas filtradas por marca o por marcas del país
     let storesQuery = supabase.from('stores').select('*').order('name');
-    if (!isSuperAdmin && profile?.brand_id) {
-      storesQuery = storesQuery.eq('brand_id', profile.brand_id);
+    if (!isSuperAdmin) {
+      if (profile?.brand_id) {
+        storesQuery = storesQuery.eq('brand_id', profile.brand_id);
+      } else if (profile?.country) {
+        const brandIds = loadedBrands.map(b => b.id);
+        if (brandIds.length > 0) {
+          storesQuery = storesQuery.in('brand_id', brandIds);
+        } else {
+          // Si no hay marcas en este país, no retornar tiendas
+          storesQuery = storesQuery.eq('brand_id', '00000000-0000-0000-0000-000000000000');
+        }
+      }
     }
     const { data: storesData } = await storesQuery;
     if (storesData) setStores(storesData);
-
-    let brandsQuery = supabase.from('brands').select('*');
-    if (!isSuperAdmin && profile?.brand_id) {
-      brandsQuery = brandsQuery.eq('id', profile.brand_id);
-    }
-    const { data: brandsData } = await brandsQuery;
-    if (brandsData) setBrands(brandsData);
 
     const configRoles = getRoles();
     setRoles(configRoles);
@@ -95,7 +118,7 @@ export default function UsersManagement() {
       id: newUserId, full_name: formData.full_name, email: formData.email,
       password: formData.password, role: formData.role, store_id: formData.store_id || null,
       brand_id: targetBrandId || null,
-      country: selectedBrand ? selectedBrand.country : null
+      country: selectedBrand ? selectedBrand.country : (profile?.country || null)
     });
     setIsSaving(false);
     if (!error) {
@@ -522,7 +545,7 @@ export default function UsersManagement() {
                   <select className="input-field" value={formData.brand_id}
                     onChange={e => setFormData({ ...formData, brand_id: e.target.value, store_id: '' })} 
                     required 
-                    disabled={!isSuperAdmin}>
+                    disabled={!isSuperAdmin && !!profile?.brand_id}>
                     <option value="" disabled>Selecciona una marca...</option>
                     {brands.map(b => (
                       <option key={b.id} value={b.id}>{b.name} - {b.country}</option>
