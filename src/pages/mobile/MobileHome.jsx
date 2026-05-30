@@ -106,12 +106,16 @@ export default function MobileHome() {
         padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '16px', background: 'var(--accent-primary)', display: 'grid', placeItems: 'center', fontWeight: '800', fontSize: '1.2rem', color: '#fff', boxShadow: '0 4px 15px rgba(0,72,130,0.2)' }}>
-               {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: profile?.brands?.logo_url ? 'transparent' : 'var(--accent-primary)', display: 'grid', placeItems: 'center', fontWeight: '800', fontSize: '1.2rem', color: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+               {profile?.brands?.logo_url ? (
+                   <img src={profile.brands.logo_url} alt={profile.brands.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : (
+                   profile?.brands?.name ? profile.brands.name.charAt(0).toUpperCase() : (profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U')
+                )}
             </div>
             <div>
                <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)' }}>Bienvenido de vuelta,</p>
-               <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{profile?.full_name ? profile.full_name.split(' ')[0] : 'Compañero'}</h1>
+               <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{profile?.full_name ? (() => { const name = profile.full_name.split(' ')[0]; return name.charAt(0).toUpperCase() + name.slice(1); })() : 'Compañero'}</h1>
             </div>
          </div>
          <div style={{ 
