@@ -76,3 +76,8 @@ CREATE POLICY superadmin_update_brand ON public.brands FOR UPDATE TO authenticat
 
 CREATE POLICY superadmin_delete_brand ON public.brands FOR DELETE TO authenticated
   USING (auth.email() = ANY(ARRAY['admin@marathon.cl','jcsoto@gmail.com']));
+
+-- 6. Permitir lectura pública de marcas (requerido por inicio de sesión local)
+DROP POLICY IF EXISTS select_brands ON public.brands;
+CREATE POLICY select_brands ON public.brands FOR SELECT TO public USING (true);
+

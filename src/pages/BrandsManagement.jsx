@@ -5,7 +5,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function BrandsManagement() {
-  const { isSuperAdmin, loading: authLoading } = useAuth();
+  const { isSuperAdmin, loading: authLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   const [brands, setBrands] = useState([]);
@@ -113,6 +113,9 @@ export default function BrandsManagement() {
       localStorage.removeItem(STORAGE_KEY);
       setIsModalOpen(false);
       fetchBrands();
+      if (refreshProfile) {
+        await refreshProfile();
+      }
     }
   };
 

@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
                 if (data) {
                     if (data.brands?.primary_color) {
                        document.documentElement.style.setProperty('--accent-primary', data.brands.primary_color);
+                       document.documentElement.style.setProperty('--accent-secondary', data.brands.primary_color);
                     }
                     setProfile(data);
                     // Engañar al engine inyectando sesión simulada
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }) => {
           }
           if (data.brands?.primary_color) {
              document.documentElement.style.setProperty('--accent-primary', data.brands.primary_color);
+             document.documentElement.style.setProperty('--accent-secondary', data.brands.primary_color);
           }
           setProfile(data);
       } else {
@@ -94,8 +96,26 @@ export const AuthProvider = ({ children }) => {
   const superAdminEmails = ['admin@marathon.cl', 'jcsoto@gmail.com'];
   const isSuperAdmin = profile ? superAdminEmails.includes(profile.email.toLowerCase()) : false;
 
+  const refreshProfile = async () => {
+    const currentUserId = session?.user?.id || profile?.id;
+    if (currentUserId) {
+      try {
+        const { data } = await supabase.from('profiles').select('*, stores(name), brands(*)').eq('id', currentUserId).single();
+        if (data) {
+          if (data.brands?.primary_color) {
+             document.documentElement.style.setProperty('--accent-primary', data.brands.primary_color);
+             document.documentElement.style.setProperty('--accent-secondary', data.brands.primary_color);
+          }
+          setProfile(data);
+        }
+      } catch (e) {
+        console.error("Error refreshing profile", e);
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, isSuperAdmin }}>
+    <AuthContext.Provider value={{ session, profile, loading, isSuperAdmin, refreshProfile }}>
       {!loading && children}
     </AuthContext.Provider>
   );

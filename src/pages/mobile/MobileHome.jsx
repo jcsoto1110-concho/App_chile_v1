@@ -130,7 +130,7 @@ export default function MobileHome() {
          {/* NOTIFICACIÓN / NUDGE DEL JEFE */}
          {activeNotification && (
             <div className="scale-on-tap" style={{
-               background: 'linear-gradient(135deg, var(--accent-primary), #003666)',
+               background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
                borderRadius: '20px', padding: '20px', marginTop: '24px', color: '#fff',
                position: 'relative', boxShadow: '0 10px 30px rgba(0,72,130,0.2)',
                border: '2px solid rgba(255,255,255,0.1)', overflow: 'hidden'
@@ -191,7 +191,7 @@ export default function MobileHome() {
               <Star size={18} color="var(--accent-primary)" fill="var(--accent-primary)" /> Reto Destacado
            </h2>
            <div className="scale-on-tap" style={{
-              background: 'linear-gradient(135deg, #004882 0%, #002855 100%)',
+              background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
               border: 'none', borderRadius: '24px', padding: '32px 24px',
               position: 'relative', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,72,130,0.2)'
            }}>
