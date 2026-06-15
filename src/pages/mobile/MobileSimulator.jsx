@@ -6,7 +6,7 @@ import { respondAsCustomer } from '../../lib/ai';
 import { checkLevelProgression } from '../../lib/progression';
 
 export default function MobileSimulator() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
 
   // VISTA: 'list' | 'chat'
   const [view, setView] = useState('list');
@@ -123,6 +123,8 @@ export default function MobileSimulator() {
     if (promoted) {
        setLevelUpInfo(nextLevel);
     }
+
+    await refreshProfile();
 
     setRewarding(false);
     setMessages(prev => [...prev, { sender: 'system', text: `¡Felicidades! Has ganado +${scenario.reward_xp} XP y +15 FitCoins.` }]);

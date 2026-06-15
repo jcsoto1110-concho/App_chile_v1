@@ -6,7 +6,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { checkLevelProgression } from '../../lib/progression';
 
 export default function MobileQuiz() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const challenge = location.state?.challenge;
@@ -133,6 +133,8 @@ export default function MobileQuiz() {
         if (promoted) {
            setLevelUpInfo(nextLevel);
         }
+
+        await refreshProfile();
 
         setExamPassed(true);
      } catch (err) {
