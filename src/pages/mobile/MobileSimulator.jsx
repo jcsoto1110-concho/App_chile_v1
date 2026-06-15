@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Bot, Send, Loader2, ChevronRight, CheckCircle2, Lock, ArrowLeft, Zap } from 'lucide-react';
+import { Bot, Send, Loader2, ChevronRight, CheckCircle2, Lock, ArrowLeft, Zap, Star } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import { respondAsCustomer } from '../../lib/ai';
+import { checkLevelProgression } from '../../lib/progression';
 
 export default function MobileSimulator() {
   const { profile } = useAuth();
@@ -21,6 +22,7 @@ export default function MobileSimulator() {
   const [isLocked, setIsLocked] = useState(false);
   const [firstAttemptBurned, setFirstAttemptBurned] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
 
   useEffect(() => {
     loadSimList();
@@ -37,6 +39,9 @@ export default function MobileSimulator() {
       .gte('end_date', todayRaw);
     if (profile?.brand_id) {
       query = query.eq('brand_id', profile.brand_id);
+    }
+    if (profile?.classification) {
+      query = query.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
     }
     const { data: sims } = await query.order('active_date', { ascending: true });
 
@@ -59,6 +64,7 @@ export default function MobileSimulator() {
     setIsCompleted(false);
     setFirstAttemptBurned(false);
     setInputMsg('');
+    setLevelUpInfo(null);
 
     if (sim.isCompleted) {
       setIsLocked(true);
@@ -107,6 +113,16 @@ export default function MobileSimulator() {
        simulation_id: scenario.id,
        score: 100
     });
+
+    const { promoted, nextLevel } = await checkLevelProgression({
+       ...profile,
+       current_xp: newXp,
+       fitcoins: newCoins
+    });
+
+    if (promoted) {
+       setLevelUpInfo(nextLevel);
+    }
 
     setRewarding(false);
     setMessages(prev => [...prev, { sender: 'system', text: `¡Felicidades! Has ganado +${scenario.reward_xp} XP y +15 FitCoins.` }]);
@@ -289,6 +305,67 @@ export default function MobileSimulator() {
             )}
           </div>
         </>
+      )}
+      {/* Level Up congratulatory Modal */}
+      {levelUpInfo && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 9999,
+          display: 'grid', placeItems: 'center', padding: '24px'
+        }}>
+          <div className="glass-panel animate-fade-in" style={{
+            width: '100%', maxWidth: '380px', background: 'var(--bg-dark)',
+            border: '2px solid var(--accent-primary)', borderRadius: '24px',
+            padding: '32px 24px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,180,255,0.3)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px'
+          }}>
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'rgba(0,180,255,0.1)', border: '2px dashed var(--accent-primary)',
+              display: 'grid', placeItems: 'center', color: 'var(--accent-primary)',
+              animation: 'pulse 2s infinite'
+            }}>
+              <Star size={40} fill="currentColor" />
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0 0 8px 0', color: 'var(--accent-primary)' }}>
+                ¡ASCENSO CONSEGUIDO!
+              </h2>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: 0 }}>
+                ¡Felicitaciones! Has completado todas tus simulaciones y retos y has ascendido al rango de:
+              </p>
+            </div>
+
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0,180,255,0.2), rgba(0,72,130,0.2))',
+              border: '1px solid var(--accent-primary)', borderRadius: '16px',
+              padding: '16px 24px', width: '100%'
+            }}>
+              <span style={{
+                fontSize: '1.4rem', fontWeight: 900, color: '#fff',
+                textTransform: 'uppercase', letterSpacing: '1px'
+              }}>
+                {levelUpInfo}
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
+              Sigue entrenando para desbloquear escenarios aún más avanzados y ganar mayor reconocimiento.
+            </p>
+
+            <button
+              onClick={() => {
+                setLevelUpInfo(null);
+                setView('list');
+              }}
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center', padding: '12px', borderRadius: '12px' }}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

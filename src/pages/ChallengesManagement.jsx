@@ -32,6 +32,7 @@ export default function ChallengesManagement() {
     end_date: todayRaw,
     is_flash: false,
     is_live: false,
+    classification_target: 'Challenger',
     quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
   });
 
@@ -77,10 +78,32 @@ export default function ChallengesManagement() {
 
   // Guardar cambios automáticamente
   useEffect(() => {
-    if (formData.title || formData.description || formData.quiz_questions[0].question) {
+    if (formData.title || formData.description || (formData.quiz_questions && formData.quiz_questions[0] && formData.quiz_questions[0].question)) {
        localStorage.setItem('pending_challenge_form', JSON.stringify(formData));
+    } else {
+       localStorage.removeItem('pending_challenge_form');
     }
   }, [formData]);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    localStorage.removeItem('pending_challenge_form');
+    setFormData({
+      title: '',
+      description: '',
+      content_url: '',
+      role_targets: [],
+      store_ids: [],
+      reward_xp: 10,
+      reward_fitcoins: 5,
+      active_date: todayRaw,
+      end_date: todayRaw,
+      is_flash: false,
+      is_live: false,
+      classification_target: 'Challenger',
+      quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
+    });
+  };
 
   const handleSaveChallenge = async (e) => {
     e.preventDefault();
@@ -115,7 +138,8 @@ export default function ChallengesManagement() {
        is_live: formData.is_live,
        quiz_data: quizData,
        brand_id: targetBrandId,
-       country: targetCountry
+       country: targetCountry,
+       classification_target: formData.classification_target || 'Challenger'
     });
 
     setIsSaving(false);
@@ -124,8 +148,8 @@ export default function ChallengesManagement() {
        setIsModalOpen(false);
        setFormData({
           title: '', description: '', content_url: '',  
-          role_target: '', store_id: '', reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
-          is_flash: false, is_live: false,
+          role_targets: [], store_ids: [], reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
+          is_flash: false, is_live: false, classification_target: 'Challenger',
           quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
        });
        localStorage.removeItem('pending_challenge_form');
@@ -231,7 +255,7 @@ export default function ChallengesManagement() {
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                    <Trophy color="var(--accent-primary)" /> Forjar Micro-Reto
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
+                <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                   <X />
                 </button>
              </div>
@@ -319,6 +343,22 @@ export default function ChallengesManagement() {
                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                         Puedes pegar una URL o subir fotos, PDFs o documentos directamente.
                      </p>
+                  </div>
+
+                  <div className="input-group">
+                     <label className="input-label">Clasificación de Carrera Destino</label>
+                     <select 
+                        className="input-field" 
+                        value={formData.classification_target || 'Challenger'}
+                        onChange={(e) => setFormData({...formData, classification_target: e.target.value})}
+                        style={{ width: '100%' }}
+                     >
+                        <option value="Challenger">Challenger</option>
+                        <option value="Performer">Performer</option>
+                        <option value="All Star">All Star</option>
+                        <option value="Alto desempeño">Alto desempeño</option>
+                        <option value="Marathon Legend">Marathon Legend</option>
+                     </select>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>

@@ -14,6 +14,7 @@ export default function MobileHome() {
   const [loading, setLoading] = useState(true);
   const [localFitcoins, setLocalFitcoins] = useState(null); // FC en tiempo real desde DB
   const [activeNotification, setActiveNotification] = useState(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     async function fetchActive() {
@@ -44,6 +45,9 @@ export default function MobileHome() {
        }
        if (profile?.store_id) {
           query = query.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
+       }
+       if (profile?.classification) {
+          query = query.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
        }
 
        const { data } = await query
@@ -95,6 +99,12 @@ export default function MobileHome() {
     fetchActive();
   }, [profile]);
 
+  useEffect(() => {
+    if (profile && !sessionStorage.getItem('welcome_classification_shown')) {
+       setShowWelcomeModal(true);
+    }
+  }, [profile]);
+
   return (
     <div className="animate-fade-in" style={{ padding: '0', overflowY: 'auto', flex: 1, position: 'relative' }}>
       
@@ -116,6 +126,11 @@ export default function MobileHome() {
             <div>
                <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)' }}>Bienvenido de vuelta,</p>
                <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{profile?.full_name ? (() => { const name = profile.full_name.split(' ')[0]; return name.charAt(0).toUpperCase() + name.slice(1); })() : 'Compañero'}</h1>
+               <div style={{ marginTop: '4px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, background: 'rgba(0,180,255,0.1)', color: 'var(--accent-primary)', padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(0,180,255,0.2)', textTransform: 'uppercase', display: 'inline-block' }}>
+                     {profile?.classification || 'Challenger'}
+                  </span>
+               </div>
             </div>
          </div>
          <div style={{ 
@@ -281,6 +296,68 @@ export default function MobileHome() {
              </div>
          )}
       </div>
+
+      {/* Welcome Classification Modal */}
+      {showWelcomeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 9999,
+          display: 'grid', placeItems: 'center', padding: '24px'
+        }}>
+          <div className="glass-panel animate-fade-in" style={{
+            width: '100%', maxWidth: '380px', background: 'var(--bg-dark)',
+            border: '2px solid var(--accent-primary)', borderRadius: '24px',
+            padding: '32px 24px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px'
+          }}>
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'rgba(0,180,255,0.1)', border: '2px dashed var(--accent-primary)',
+              display: 'grid', placeItems: 'center', color: 'var(--accent-primary)',
+              animation: 'pulse 2s infinite'
+            }}>
+              <Star size={40} fill="currentColor" />
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px 0', color: '#fff' }}>
+                ¡Clasificación de Carrera!
+              </h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
+                Hola <strong style={{ color: '#fff' }}>{profile?.full_name?.split(' ')[0]}</strong>, tu nivel actual en Marathon es:
+              </p>
+            </div>
+
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0,180,255,0.15), rgba(0,72,130,0.15))',
+              border: '1px solid var(--accent-primary)', borderRadius: '16px',
+              padding: '16px 24px', width: '100%'
+            }}>
+              <span style={{
+                fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-primary)',
+                textTransform: 'uppercase', letterSpacing: '1px'
+              }}>
+                {profile?.classification || 'Challenger'}
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
+              Tus micro-retos y simuladores de venta por IA se han adaptado automáticamente a este nivel para impulsar tu crecimiento profesional.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowWelcomeModal(false);
+                sessionStorage.setItem('welcome_classification_shown', 'true');
+              }}
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center', padding: '12px', borderRadius: '12px' }}
+            >
+              ¡Comenzar Retos!
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .scale-on-tap:active {

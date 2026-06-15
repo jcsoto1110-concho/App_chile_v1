@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Play, CheckCircle, XCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { Play, CheckCircle, XCircle, ArrowLeft, Loader2, Star } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
+import { checkLevelProgression } from '../../lib/progression';
 
 export default function MobileQuiz() {
   const { profile } = useAuth();
@@ -21,6 +22,7 @@ export default function MobileQuiz() {
   const [timeLeft, setTimeLeft] = useState(20);
   const [userComment, setUserComment] = useState('');
   const [isSavingFinal, setIsSavingFinal] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
 
   // Timer para Trivia Exprés
   React.useEffect(() => {
@@ -121,6 +123,16 @@ export default function MobileQuiz() {
            score: earnedStats.percentage,
            comment: userComment
         });
+
+        const { promoted, nextLevel } = await checkLevelProgression({
+           ...profile,
+           current_xp: newXp,
+           fitcoins: newCoins
+        });
+
+        if (promoted) {
+           setLevelUpInfo(nextLevel);
+        }
 
         setExamPassed(true);
      } catch (err) {
@@ -273,26 +285,53 @@ export default function MobileQuiz() {
               </div>
             </>
          ) : (
-            /* PANTALLA ÉXITO / RENDIMIENTO TOTAL */
-            <div className="animate-fade-in" style={{ textAlign: 'center', padding: '40px 20px', marginTop: '20px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '24px' }}>
-                <div style={{ width: '80px', height: '80px', background: earnedStats.percentage > 50 ? 'rgba(0, 255, 100, 0.1)' : 'rgba(255, 175, 0, 0.1)', borderRadius: '50%', margin: '0 auto 24px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                   {earnedStats.percentage > 50 ? <CheckCircle size={40} color="#00ff64" /> : <Play size={40} color="var(--accent-warning)" />}
-                </div>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Test Finalizado</h2>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>
-                   Tuviste un <strong style={{ color: '#fff' }}>{earnedStats.percentage}%</strong> de efectividad en el examen.
-                </p>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Recompensa calculada sobre tu rendimiento:</p>
-                
-                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '32px' }}>
-                   <span className="badge primary" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.xp} XP</span>
-                   <span className="badge warning" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.fc} FC</span>
-                </div>
+             /* PANTALLA ÉXITO / RENDIMIENTO TOTAL */
+             levelUpInfo ? (
+                <div className="animate-fade-in" style={{ textAlign: 'center', padding: '40px 20px', marginTop: '20px', background: 'var(--bg-card)', border: '1px solid var(--accent-primary)', borderRadius: '24px', boxShadow: '0 0 30px rgba(0,180,255,0.2)' }}>
+                    <div style={{ width: '80px', height: '80px', background: 'rgba(0,180,255,0.1)', border: '2px dashed var(--accent-primary)', borderRadius: '50%', margin: '0 auto 24px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2s infinite' }}>
+                       <Star size={40} color="var(--accent-primary)" fill="var(--accent-primary)" />
+                    </div>
+                    <h2 style={{ fontSize: '1.6rem', marginBottom: '8px', color: 'var(--accent-primary)', fontWeight: 900 }}>¡ASCENSO CONSEGUIDO!</h2>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
+                       ¡Has completado todos los retos de tu nivel actual y has ascendido a:
+                    </p>
+                    <div style={{ background: 'rgba(0,180,255,0.15)', border: '1px solid var(--accent-primary)', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
+                       <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          {levelUpInfo}
+                       </span>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '0.85rem' }}>Tus nuevas recompensas del quiz también han sido acreditadas:</p>
+                    
+                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '32px' }}>
+                       <span className="badge primary" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.xp} XP</span>
+                       <span className="badge warning" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.fc} FC</span>
+                    </div>
 
-                <button onClick={() => navigate('/app/home')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                   Volver a Inicio
-                </button>
-            </div>
+                    <button onClick={() => navigate('/app/home')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                       Volver a Inicio
+                    </button>
+                </div>
+             ) : (
+                <div className="animate-fade-in" style={{ textAlign: 'center', padding: '40px 20px', marginTop: '20px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '24px' }}>
+                    <div style={{ width: '80px', height: '80px', background: earnedStats.percentage > 50 ? 'rgba(0, 255, 100, 0.1)' : 'rgba(255, 175, 0, 0.1)', borderRadius: '50%', margin: '0 auto 24px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       {earnedStats.percentage > 50 ? <CheckCircle size={40} color="#00ff64" /> : <Play size={40} color="var(--accent-warning)" />}
+                    </div>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Test Finalizado</h2>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>
+                       Tuviste un <strong style={{ color: '#fff' }}>{earnedStats.percentage}%</strong> de efectividad en el examen.
+                    </p>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Recompensa calculada sobre tu rendimiento:</p>
+                    
+                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '32px' }}>
+                       <span className="badge primary" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.xp} XP</span>
+                       <span className="badge warning" style={{ fontSize: '1.1rem', padding: '8px 16px' }}>+{earnedStats.fc} FC</span>
+                    </div>
+
+                    <button onClick={() => navigate('/app/home')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                       Volver a Inicio
+                    </button>
+                </div>
+             )
          )}
          
       </div>

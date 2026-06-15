@@ -70,7 +70,8 @@ export const AuthProvider = ({ children }) => {
              role: isPrivileged ? 'admin' : 'asesor',
              current_level: 1,
              current_xp: 0,
-             fitcoins: 0
+             fitcoins: 0,
+             classification: 'Challenger'
           };
           // Insertamos silenciamente el fallback
           await supabase.from('profiles').insert([fakeProfile]);

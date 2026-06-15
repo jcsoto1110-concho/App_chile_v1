@@ -24,7 +24,8 @@ export default function SimulationsManagement() {
     active_date: todayRaw, 
     end_date: todayRaw,
     role_targets: [],
-    store_ids: []
+    store_ids: [],
+    classification_target: 'Challenger'
   });
 
   async function fetchSimulations() {
@@ -68,10 +69,26 @@ export default function SimulationsManagement() {
 
   // Guardar persistencia automáticamente
   useEffect(() => {
-     if (ideaPrompt) localStorage.setItem('pending_sim_prompt', ideaPrompt);
-     if (generatedSim) localStorage.setItem('pending_sim_generated', JSON.stringify(generatedSim));
-     if (dates) localStorage.setItem('pending_sim_dates', JSON.stringify(dates));
+     if (ideaPrompt || generatedSim) {
+        if (ideaPrompt) localStorage.setItem('pending_sim_prompt', ideaPrompt);
+        if (generatedSim) localStorage.setItem('pending_sim_generated', JSON.stringify(generatedSim));
+        if (dates) localStorage.setItem('pending_sim_dates', JSON.stringify(dates));
+     } else {
+        localStorage.removeItem('pending_sim_prompt');
+        localStorage.removeItem('pending_sim_generated');
+        localStorage.removeItem('pending_sim_dates');
+     }
   }, [ideaPrompt, generatedSim, dates]);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setIdeaPrompt("");
+    setGeneratedSim(null);
+    setDates({ active_date: todayRaw, end_date: todayRaw, role_targets: [], store_ids: [], classification_target: 'Challenger' });
+    localStorage.removeItem('pending_sim_prompt');
+    localStorage.removeItem('pending_sim_generated');
+    localStorage.removeItem('pending_sim_dates');
+  };
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -105,7 +122,8 @@ export default function SimulationsManagement() {
       active_date: dates.active_date,
       end_date: dates.end_date,
       brand_id: targetBrandId,
-      country: targetCountry
+      country: targetCountry,
+      classification_target: dates.classification_target || 'Challenger'
     });
     
     setIsGenerating(false);
@@ -114,7 +132,7 @@ export default function SimulationsManagement() {
         setIsModalOpen(false);
         setIdeaPrompt("");
         setGeneratedSim(null);
-        setDates({ active_date: todayRaw, end_date: todayRaw, role_targets: [], store_ids: [] });
+        setDates({ active_date: todayRaw, end_date: todayRaw, role_targets: [], store_ids: [], classification_target: 'Challenger' });
         
         // Limpiar persistencia
         localStorage.removeItem('pending_sim_prompt');
@@ -262,7 +280,7 @@ export default function SimulationsManagement() {
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                    <Bot color="var(--accent-primary)" /> Forjar Escenario
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
+                <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                   <X />
                 </button>
              </div>
@@ -318,6 +336,22 @@ export default function SimulationsManagement() {
 
                     {/* SECCIÓN FECHAS Y SEGMENTACIÓN (NUEVA) */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '24px' }}>
+                       
+                       <div className="input-group" style={{ marginBottom: '16px' }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Clasificación de Carrera Destino</label>
+                          <select 
+                             className="input-field" 
+                             value={dates.classification_target || 'Challenger'}
+                             onChange={e => setDates({...dates, classification_target: e.target.value})}
+                             style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', color: '#fff', borderRadius: '8px', padding: '8px' }}
+                          >
+                             <option value="Challenger">Challenger</option>
+                             <option value="Performer">Performer</option>
+                             <option value="All Star">All Star</option>
+                             <option value="Alto desempeño">Alto desempeño</option>
+                             <option value="Marathon Legend">Marathon Legend</option>
+                          </select>
+                       </div>
                        
                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                           <div className="input-group" style={{ margin: 0 }}>

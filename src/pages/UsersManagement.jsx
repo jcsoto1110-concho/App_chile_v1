@@ -18,7 +18,7 @@ export default function UsersManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState(null);
   const [formData, setFormData] = useState({
-    full_name: '', email: '', password: '', role: '', store_id: '', brand_id: ''
+    full_name: '', email: '', password: '', role: '', store_id: '', brand_id: '', classification: 'Challenger'
   });
 
   // Panel Config Roles (inline)
@@ -104,6 +104,8 @@ export default function UsersManagement() {
   useEffect(() => {
     if (formData.full_name || formData.email) {
        localStorage.setItem('pending_user_form', JSON.stringify(formData));
+    } else {
+       localStorage.removeItem('pending_user_form');
     }
   }, [formData]);
 
@@ -118,7 +120,8 @@ export default function UsersManagement() {
       id: newUserId, full_name: formData.full_name, email: formData.email,
       password: formData.password, role: formData.role, store_id: formData.store_id || null,
       brand_id: targetBrandId || null,
-      country: selectedBrand ? selectedBrand.country : (profile?.country || null)
+      country: selectedBrand ? selectedBrand.country : (profile?.country || null),
+      classification: formData.classification || 'Challenger'
     });
     setIsSaving(false);
     if (!error) {
@@ -129,7 +132,8 @@ export default function UsersManagement() {
         password: '', 
         role: roles[0]?.name || 'asesor', 
         store_id: '', 
-        brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : '' 
+        brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : '',
+        classification: 'Challenger'
       });
       localStorage.removeItem('pending_user_form');
       fetchAll();
@@ -153,9 +157,24 @@ export default function UsersManagement() {
       password: '',
       role: roles[0]?.name || 'asesor',
       store_id: '',
-      brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : ''
+      brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : '',
+      classification: 'Challenger'
     });
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    localStorage.removeItem('pending_user_form');
+    setFormData({
+      full_name: '',
+      email: '',
+      password: '',
+      role: roles[0]?.name || 'asesor',
+      store_id: '',
+      brand_id: !isSuperAdmin && profile?.brand_id ? profile.brand_id : '',
+      classification: 'Challenger'
+    });
   };
 
   // Gestión de Roles inline
@@ -191,6 +210,7 @@ export default function UsersManagement() {
         'Marca': userBrand?.name || 'Sin Asignar',
         'País': userBrand?.country || user.country || 'Sin Asignar',
         'Nivel': user.current_level,
+        'Clasificación': user.classification || 'Challenger',
         'XP': user.current_xp,
         'FitCoins': user.fitcoins,
         'Racha (Días)': user.streak_days,
@@ -238,6 +258,7 @@ export default function UsersManagement() {
 
           const foundStore = stores.find(s => s.name.toLowerCase() === String(storeName || '').toLowerCase());
           const store_id = foundStore ? foundStore.id : null;
+          const classification = row['Clasificación'] || row['Clasificacion'] || row['Classification'] || 'Challenger';
 
           return {
             id: crypto.randomUUID(),
@@ -249,6 +270,7 @@ export default function UsersManagement() {
             brand_id: brand_id,
             country: country,
             current_level: 1,
+            classification: classification,
             current_xp: 0,
             fitcoins: 0,
             streak_days: 0
@@ -456,6 +478,7 @@ export default function UsersManagement() {
                     <th style={{ padding: '16px', fontWeight: 500 }}>Marca</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>País</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Nivel</th>
+                    <th style={{ padding: '16px', fontWeight: 500 }}>Clasificación</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>FitCoins</th>
                     <th style={{ padding: '16px', fontWeight: 500 }}>Acciones</th>
                   </tr>
@@ -482,6 +505,11 @@ export default function UsersManagement() {
                             <div style={{ height: '100%', width: `${(user.current_xp % 100)}%`, background: 'var(--accent-primary)' }}></div>
                           </div>
                         </div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span className="badge primary" style={{ background: 'rgba(0,240,255,0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(0,240,255,0.2)' }}>
+                          {user.classification || 'Challenger'}
+                        </span>
                       </td>
                       <td style={{ padding: '16px', color: 'var(--accent-warning)', fontWeight: 600 }}>{user.fitcoins} FC</td>
                       <td style={{ padding: '16px' }}>
@@ -512,7 +540,7 @@ export default function UsersManagement() {
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus color="var(--accent-primary)" /> Registrar Integrante
               </h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
+              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                 <X />
               </button>
             </div>
@@ -550,6 +578,18 @@ export default function UsersManagement() {
                     {brands.map(b => (
                       <option key={b.id} value={b.id}>{b.name} - {b.country}</option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Clasificación de Carrera</label>
+                  <select className="input-field" value={formData.classification || 'Challenger'}
+                    onChange={e => setFormData({ ...formData, classification: e.target.value })}>
+                    <option value="Challenger">Challenger</option>
+                    <option value="Performer">Performer</option>
+                    <option value="All Star">All Star</option>
+                    <option value="Alto desempeño">Alto desempeño</option>
+                    <option value="Marathon Legend">Marathon Legend</option>
                   </select>
                 </div>
 
