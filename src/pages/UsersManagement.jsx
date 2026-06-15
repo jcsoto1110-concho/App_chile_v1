@@ -75,7 +75,15 @@ export default function UsersManagement() {
       }
     }
     const { data: storesData } = await storesQuery;
-    if (storesData) setStores(storesData);
+    if (storesData) {
+      // Auto-fix legacy stores: si una tienda no tiene brand_id, asume que es de Marathon
+      const marathonBrand = loadedBrands.find(b => b.name.toLowerCase().includes('marathon'));
+      const fixedStores = storesData.map(s => ({
+        ...s,
+        brand_id: s.brand_id || (marathonBrand ? marathonBrand.id : null)
+      }));
+      setStores(fixedStores);
+    }
 
     const configRoles = getRoles();
     setRoles(configRoles);
