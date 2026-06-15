@@ -365,11 +365,11 @@ export default function MobileHome() {
             </div>
 
             <div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px 0', color: '#fff' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px 0', color: 'var(--text-main)' }}>
                 ¡Clasificación de Carrera!
               </h2>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
-                Hola <strong style={{ color: '#fff' }}>{profile?.full_name?.split(' ')[0]}</strong>, tu nivel actual es:
+                Hola <strong style={{ color: 'var(--text-main)' }}>{profile?.full_name?.split(' ')[0]}</strong>, tu nivel actual es:
               </p>
             </div>
 
