@@ -463,7 +463,7 @@ export default function ChallengesManagement() {
                   <div style={{ padding: '16px', background: 'rgba(50,50,250,0.05)', borderRadius: '12px', border: '1px solid rgba(50,100,255,0.2)', marginBottom: '16px' }}>
                      <h3 style={{ fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                         Módulo de Examen (Test Formal)
-                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
+                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
                      </h3>
                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Puedes añadir tantas preguntas como desees (Recomendado: 5). Todas deberán ser aprobadas.</p>
                      

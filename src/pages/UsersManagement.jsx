@@ -76,12 +76,16 @@ export default function UsersManagement() {
     }
     const { data: storesData } = await storesQuery;
     if (storesData) {
-      // Auto-fix legacy stores: si una tienda no tiene brand_id, asume que es de Marathon
+      // Auto-fix legacy stores: si una tienda no tiene brand_id o tiene un brand_id huérfano, asume que es de Marathon
       const marathonBrand = loadedBrands.find(b => b.name.toLowerCase().includes('marathon'));
-      const fixedStores = storesData.map(s => ({
-        ...s,
-        brand_id: s.brand_id || (marathonBrand ? marathonBrand.id : null)
-      }));
+      const validBrandIds = new Set(loadedBrands.map(b => b.id));
+      const fixedStores = storesData.map(s => {
+        const hasValidBrand = s.brand_id && validBrandIds.has(s.brand_id);
+        return {
+          ...s,
+          brand_id: hasValidBrand ? s.brand_id : (marathonBrand ? marathonBrand.id : null)
+        };
+      });
       setStores(fixedStores);
     }
 
