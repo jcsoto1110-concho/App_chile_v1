@@ -1,26 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell, Zap, TrendingUp, Star, BookOpen } from 'lucide-react';
+import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell, Zap, TrendingUp, Star, Dumbbell, ArrowUpCircle } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import climberImg from '../../assets/climber.png';
 
 export default function MobileHome() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [challenges, setChallenges] = useState([]);
-  const [progressLog, setProgressLog] = useState({});
+  
+  const [trainingPlan, setTrainingPlan] = useState([]);
   const [storeKpi, setStoreKpi] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [localFitcoins, setLocalFitcoins] = useState(null); // FC en tiempo real desde DB
+  const [localFitcoins, setLocalFitcoins] = useState(null);
   const [activeNotification, setActiveNotification] = useState(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  
+  // Progression metrics
+  const [progressMetrics, setProgressMetrics] = useState({ total: 0, completed: 0, nextLevel: null });
+
+  const LEVELS = ['Challenger', 'Performer', 'All Star', 'Alto desempeño', 'Marathon Legend'];
 
   useEffect(() => {
     async function fetchActive() {
        const today = new Date().toISOString().split('T')[0];
        
-       // 1. Notificaciones/Nudges del Jefe
        if (profile?.id) {
           const { data: notifs } = await supabase
              .from('user_notifications')
@@ -29,66 +33,103 @@ export default function MobileHome() {
              .eq('is_read', false)
              .order('created_at', { ascending: false })
              .limit(1);
-          if (notifs && notifs.length > 0) {
-             setActiveNotification(notifs[0]);
-          }
+          if (notifs && notifs.length > 0) setActiveNotification(notifs[0]);
        }
        
-       // Filtrado Avanzado: Retos que incluyan mi rol Y mi tienda (o sean globales)
-       let query = supabase.from('daily_challenges').select('*');
-       if (profile?.brand_id) {
-          query = query.eq('brand_id', profile.brand_id);
-       }
-       
-       if (profile?.role) {
-          query = query.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);
-       }
-       if (profile?.store_id) {
-          query = query.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
-       }
-       if (profile?.classification) {
-          query = query.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
-       }
+       // 1. Fetch Challenges
+       let chQuery = supabase.from('daily_challenges').select('*');
+       if (profile?.brand_id) chQuery = chQuery.eq('brand_id', profile.brand_id);
+       if (profile?.role) chQuery = chQuery.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);
+       if (profile?.store_id) chQuery = chQuery.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
+       if (profile?.classification) chQuery = chQuery.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
+       const { data: challengesData } = await chQuery.order('created_at', { ascending: false }).limit(20);
 
-       const { data } = await query
-          .order('created_at', { ascending: false })
-          .limit(10);
-       
-       if (data) setChallenges(data);
+       // 2. Fetch Simulations
+       let simQuery = supabase.from('simulations').select('*').lte('active_date', today).gte('end_date', today);
+       if (profile?.brand_id) simQuery = simQuery.eq('brand_id', profile.brand_id);
+       if (profile?.role) simQuery = simQuery.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);
+       if (profile?.store_id) simQuery = simQuery.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
+       if (profile?.classification) simQuery = simQuery.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
+       const { data: simsData } = await simQuery.order('active_date', { ascending: true });
 
-       if (profile?.id && data) {
-           // Refrescar FC real desde DB (no del contexto que queda viejo)
-           const { data: freshProfile } = await supabase
-               .from('profiles').select('fitcoins').eq('id', profile.id).single();
+       if (profile?.id) {
+           const { data: freshProfile } = await supabase.from('profiles').select('fitcoins').eq('id', profile.id).single();
            if (freshProfile) setLocalFitcoins(freshProfile.fitcoins ?? 0);
 
-           const { data: prog } = await supabase.from('user_progress').select('*').eq('user_id', profile.id);
-           const pLog = {};
-           prog?.forEach(p => pLog[p.challenge_id] = p.score === 0 ? 'failed' : 'completed');
+           // Fetch progress
+           const { data: chProg } = await supabase.from('user_progress').select('*').eq('user_id', profile.id);
+           const { data: simProg } = await supabase.from('user_simulation_progress').select('*').eq('user_id', profile.id);
+
+           const chLog = {};
+           chProg?.forEach(p => chLog[p.challenge_id] = p.score === 0 ? 'failed' : 'completed');
            
-           // --------- MOTOR DE PENALIZACIÓN AUTÓNOMO ---------
-           const todayRaw = new Date().toISOString().split('T')[0];
+           const simLog = new Set();
+           simProg?.forEach(p => simLog.add(p.simulation_id));
+
+           // Engine Penalization for Challenges
            const overdueInserts = [];
            let penaltiesAmount = 0;
-
-           data.forEach(ch => {
-               if (ch.end_date && ch.end_date < todayRaw && !pLog[ch.id]) {
+           challengesData?.forEach(ch => {
+               if (ch.end_date && ch.end_date < today && !chLog[ch.id]) {
                    overdueInserts.push({ user_id: profile.id, challenge_id: ch.id, score: 0 });
-                   penaltiesAmount += 5; // Reducido a 5 FC por reto (no 100)
-                   pLog[ch.id] = 'failed';
+                   penaltiesAmount += 5;
+                   chLog[ch.id] = 'failed';
                }
            });
 
            if (overdueInserts.length > 0) {
                await supabase.from('user_progress').insert(overdueInserts);
                const currentFc = freshProfile?.fitcoins ?? profile.fitcoins ?? 0;
-               const finalCoins = Math.max(0, currentFc - penaltiesAmount); // Mínimo 0, nunca negativo
+               const finalCoins = Math.max(0, currentFc - penaltiesAmount);
                await supabase.from('profiles').update({ fitcoins: finalCoins }).eq('id', profile.id);
                setLocalFitcoins(finalCoins);
            }
-           // ----------------------------------------------------
 
-           setProgressLog(pLog);
+           // Assemble Training Plan
+           const plan = [];
+           
+           // Active Challenges
+           challengesData?.forEach(ch => {
+               if (!ch.end_date || ch.end_date >= today) {
+                   plan.push({
+                      ...ch,
+                      type: 'challenge',
+                      status: chLog[ch.id] || 'pending'
+                   });
+               }
+           });
+
+           // Active Simulations
+           simsData?.forEach(sim => {
+               plan.push({
+                  ...sim,
+                  type: 'simulation',
+                  status: simLog.has(sim.id) ? 'completed' : 'pending'
+               });
+           });
+
+           // Sort plan: pending first
+           plan.sort((a, b) => {
+              if (a.status === 'pending' && b.status !== 'pending') return -1;
+              if (a.status !== 'pending' && b.status === 'pending') return 1;
+              return new Date(b.created_at) - new Date(a.created_at);
+           });
+
+           setTrainingPlan(plan);
+
+           // Progression Math for current classification
+           const currentLevel = profile.classification || 'Challenger';
+           const currentIndex = LEVELS.indexOf(currentLevel);
+           const nextLvl = currentIndex >= 0 && currentIndex < LEVELS.length - 1 ? LEVELS[currentIndex + 1] : null;
+
+           const tasksForLevel = plan.filter(t => t.classification_target === currentLevel);
+           const completedForLevel = tasksForLevel.filter(t => t.status === 'completed');
+
+           setProgressMetrics({
+              total: tasksForLevel.length,
+              completed: completedForLevel.length,
+              nextLevel: nextLvl
+           });
 
            const { data: storeInfo } = await supabase.from('stores').select('*').eq('id', profile.store_id).single();
            if (storeInfo) setStoreKpi(storeInfo);
@@ -104,6 +145,18 @@ export default function MobileHome() {
        setShowWelcomeModal(true);
     }
   }, [profile]);
+
+  const handleStartTask = (task) => {
+     if (task.type === 'challenge') {
+        navigate('/app/quiz', { state: { challenge: task } });
+     } else {
+        navigate('/app/simulator');
+     }
+  };
+
+  const progressPercentage = progressMetrics.total > 0 
+     ? Math.round((progressMetrics.completed / progressMetrics.total) * 100) 
+     : 100;
 
   return (
     <div className="animate-fade-in" style={{ padding: '0', overflowY: 'auto', flex: 1, position: 'relative' }}>
@@ -124,11 +177,11 @@ export default function MobileHome() {
                 )}
             </div>
             <div>
-               <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)' }}>Bienvenido de vuelta,</p>
+               <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)' }}>Entrenamiento de</p>
                <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{profile?.full_name ? (() => { const name = profile.full_name.split(' ')[0]; return name.charAt(0).toUpperCase() + name.slice(1); })() : 'Compañero'}</h1>
                <div style={{ marginTop: '4px' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 800, background: 'rgba(0,180,255,0.1)', color: 'var(--accent-primary)', padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(0,180,255,0.2)', textTransform: 'uppercase', display: 'inline-block' }}>
-                     {profile?.classification || 'Challenger'}
+                     Rango: {profile?.classification || 'Challenger'}
                   </span>
                </div>
             </div>
@@ -146,16 +199,50 @@ export default function MobileHome() {
       </div>
 
       <div style={{ padding: '0 20px' }}>
+         
+         {/* BARRA DE PROGRESO DE ASCENSO */}
+         {progressMetrics.nextLevel && (
+           <div className="glass-panel scale-on-tap" style={{ margin: '24px 0', padding: '24px', position: 'relative', overflow: 'hidden', border: '2px solid rgba(0,240,255,0.2)', background: 'linear-gradient(135deg, rgba(0,240,255,0.05), rgba(112,0,255,0.05))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                 <div>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--accent-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800 }}>
+                       <ArrowUpCircle size={18} /> Siguiente Ascenso
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                       Destino: <strong style={{ color: 'var(--text-main)' }}>{progressMetrics.nextLevel}</strong>
+                    </p>
+                 </div>
+                 <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(0,180,255,0.1)', display: 'grid', placeItems: 'center', fontWeight: 800, color: 'var(--accent-primary)', border: '2px solid var(--accent-primary)' }}>
+                    {progressPercentage}%
+                 </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.1)', height: '10px', borderRadius: '5px', overflow: 'hidden', marginBottom: '12px' }}>
+                 <div style={{ 
+                    background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))', 
+                    width: `${progressPercentage}%`, 
+                    height: '100%', borderRadius: '5px', transition: 'width 0.5s ease-out'
+                 }}></div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-main)', textAlign: 'center', fontWeight: 600 }}>
+                 {progressMetrics.total - progressMetrics.completed > 0 
+                   ? `¡Te faltan ${progressMetrics.total - progressMetrics.completed} entrenamientos para ascender!`
+                   : `¡Entrenamientos completados! Reclama tu ascenso.`}
+              </p>
+           </div>
+         )}
+
          {/* NOTIFICACIÓN / NUDGE DEL JEFE */}
          {activeNotification && (
             <div className="scale-on-tap" style={{
-               background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-               borderRadius: '20px', padding: '20px', marginTop: '24px', color: '#fff',
-               position: 'relative', boxShadow: '0 10px 30px rgba(0,72,130,0.2)',
+               background: 'linear-gradient(135deg, var(--accent-danger), #ff6b6b)',
+               borderRadius: '20px', padding: '20px', marginTop: '0', marginBottom: '24px', color: '#fff',
+               position: 'relative', boxShadow: '0 10px 30px rgba(255,0,0,0.2)',
                border: '2px solid rgba(255,255,255,0.1)', overflow: 'hidden'
             }}>
                <Bell size={64} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.1, transform: 'rotate(15deg)' }} />
-               <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800 }}>📣 Mensaje de tu Jefe</h4>
+               <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800 }}>📣 Alerta del Entrenador</h4>
                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.4, fontWeight: 600 }}>{activeNotification.message}</p>
                <button 
                   onClick={async () => {
@@ -171,122 +258,80 @@ export default function MobileHome() {
                </button>
             </div>
          )}
-
-         {/* KPI DASHBOARD CARD */}
-         {storeKpi && storeKpi.monthly_sales_goal > 0 && (
-            <div className="glass-panel" style={{ margin: '24px 0', padding: '24px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-               <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--accent-primary)', opacity: 0.05, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
-               <h3 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <TrendingUp size={16} color="var(--accent-primary)" /> Objetivo de Sucursal
-               </h3>
-               
-               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
-                     {Math.round(((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%
-                  </span>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', marginBottom: '8px', fontWeight: 700 }}>Completado</span>
-               </div>
-
-               <div style={{ background: 'rgba(0,0,0,0.05)', height: '12px', borderRadius: '6px', overflow: 'hidden', marginBottom: '12px' }}>
-                   <div style={{ 
-                      background: 'var(--accent-primary)', 
-                      width: `${Math.min(100, ((storeKpi.current_sales || 0) / storeKpi.monthly_sales_goal) * 100)}%`, 
-                      height: '100%', borderRadius: '6px'
-                   }}></div>
-               </div>
-               
-               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                   <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Llevan: ${(storeKpi.current_sales || 0).toLocaleString()}</span>
-                   <span>Faltan: ${(storeKpi.monthly_sales_goal - (storeKpi.current_sales || 0)).toLocaleString()}</span>
-               </div>
-            </div>
-         )}
       </div>
 
-      {/* HERO CARD: RETO DESTACADO */}
-      {challenges.length > 0 && !progressLog[challenges[0].id] && (
-        <div style={{ margin: '0 20px 32px' }}>
-           <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--text-main)' }}>
-              <Star size={18} color="var(--accent-primary)" fill="var(--accent-primary)" /> Reto Destacado
-           </h2>
-           <div className="scale-on-tap" style={{
-              background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
-              border: 'none', borderRadius: '24px', padding: '32px 24px',
-              position: 'relative', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,72,130,0.2)'
-           }}>
-              <img src={climberImg} alt="" style={{ position: 'absolute', right: '-40px', top: '5%', height: '120%', opacity: 0.2, objectFit: 'contain', pointerEvents: 'none' }} />
-              
-              <div style={{ position: 'relative', zIndex: 2, width: '80%' }}>
-                 <span style={{ background: 'var(--accent-danger)', color: '#fff', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px', display: 'inline-block' }}>Nueva Misión</span>
-                 <h3 style={{ fontSize: '1.6rem', margin: '0 0 12px 0', lineHeight: 1.2, fontWeight: 800, color: '#fff' }}>{challenges[0].title}</h3>
-                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 24px 0', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {challenges[0].description}
-                 </p>
-                 <button onClick={() => navigate('/app/quiz', { state: { challenge: challenges[0] } })} 
-                    className="btn-primary" 
-                    style={{ width: '100%', justifyContent: 'center', gap: '8px', padding: '16px', borderRadius: '16px', background: '#fff', color: 'var(--accent-primary)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
-                    <Play fill="currentColor" size={16} /> Comenzar Ahora
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* LISTA DE MÓDULOS TEÓRICOS */}
+      {/* RUTINA DEL DÍA */}
       <div style={{ padding: '0 20px 40px' }}>
-         <h2 style={{ fontSize: '1.1rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--text-main)' }}>
-            <BookOpen size={18} color="var(--accent-primary)" /> Módulos Teóricos
+         <h2 style={{ fontSize: '1.2rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Dumbbell size={20} color="var(--accent-primary)" /> Rutina del Día
          </h2>
          
          {loading ? (
              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                 <Loader2 className="animate-spin text-accent-primary" size={32} style={{ margin: '0 auto 12px auto' }} />
              </div>
-         ) : challenges.length === 0 ? (
+         ) : trainingPlan.length === 0 ? (
              <div className="glass-panel" style={{ padding: '32px', textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-muted)', margin: 0 }}>No tienes contenido pendiente.</p>
+                <CheckCircle size={48} color="var(--accent-success)" style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
+                <p style={{ color: 'var(--text-main)', margin: '0 0 8px 0', fontWeight: 700 }}>¡Día Libre!</p>
+                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>No tienes rutinas pendientes para hoy.</p>
              </div>
          ) : (
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                 {challenges.map(ch => {
-                    const status = progressLog[ch.id];
-                    const isFailed = status === 'failed';
-                    const isCompleted = status === 'completed';
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                 {trainingPlan.map((task, idx) => {
+                    const isFailed = task.status === 'failed';
+                    const isCompleted = task.status === 'completed';
+                    const isChallenge = task.type === 'challenge';
                     
                     return (
-                       <div key={ch.id} className="scale-on-tap" style={{
-                          background: isFailed ? 'rgba(204,0,0,0.05)' : 'rgba(255,255,255,0.7)',
-                          border: isFailed ? '1px solid rgba(204,0,0,0.1)' : '1px solid rgba(0,0,0,0.05)',
-                          borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column',
-                          opacity: isCompleted ? 0.5 : 1, transition: 'transform 0.2s', backdropFilter: 'blur(10px)',
-                          position: 'relative'
+                       <div key={`${task.type}-${task.id}`} className="scale-on-tap" style={{
+                          background: isFailed ? 'rgba(204,0,0,0.05)' : (isCompleted ? 'rgba(0,255,100,0.05)' : 'rgba(255,255,255,0.7)'),
+                          border: isFailed ? '1px solid rgba(204,0,0,0.2)' : (isCompleted ? '1px solid rgba(0,255,100,0.3)' : '1px solid rgba(0,0,0,0.05)'),
+                          borderRadius: '20px', padding: '20px', display: 'flex', flexDirection: 'column',
+                          opacity: (isCompleted || isFailed) ? 0.6 : 1, transition: 'all 0.2s', backdropFilter: 'blur(10px)',
+                          position: 'relative', overflow: 'hidden'
                        }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', lineHeight: 1.3, color: isFailed ? 'var(--accent-danger)' : 'var(--text-main)', fontWeight: 700 }}>
-                             {ch.title}
-                          </h4>
+                          {isCompleted && <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: '80px', height: '80px', background: 'rgba(0,255,100,0.1)', borderRadius: '50%', pointerEvents: 'none' }}></div>}
                           
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-                                <Zap size={12} fill="currentColor"/> {ch.reward_fitcoins}
-                             </span>
-                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-                                <Target size={12} /> {ch.reward_xp} XP
-                             </span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                             <div>
+                                <span style={{ 
+                                   fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', 
+                                   color: isChallenge ? '#7000ff' : '#00b4ff', 
+                                   background: isChallenge ? 'rgba(112,0,255,0.1)' : 'rgba(0,180,255,0.1)',
+                                   padding: '4px 8px', borderRadius: '8px', marginBottom: '8px', display: 'inline-block' 
+                                }}>
+                                   {isChallenge ? 'Conocimiento' : 'Práctica / Roleplay'}
+                                </span>
+                                <h4 style={{ margin: '0', fontSize: '1.05rem', lineHeight: 1.3, color: 'var(--text-main)', fontWeight: 800 }}>
+                                   Rutina {idx + 1}: {task.title}
+                                </h4>
+                             </div>
+                             
+                             {(isCompleted || isFailed) ? (
+                                isCompleted ? <CheckCircle size={24} color="#00ff64" /> : <XCircle size={24} color="#ff3232" />
+                             ) : null}
                           </div>
                           
-                          <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                             {isCompleted ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-success)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                   <CheckCircle size={16} /> Hecho
-                                </div>
-                             ) : isFailed ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-danger)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                   <XCircle size={16} /> Reprobado
-                                </div>
-                             ) : (
-                                <button onClick={() => navigate('/app/quiz', { state: { challenge: ch } })} 
-                                   style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-primary)', border: 'none', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,72,130,0.2)' }}>
-                                   <ChevronRight size={18} />
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                             {isChallenge ? task.description : task.scenario_description}
+                          </p>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '16px' }}>
+                             <div style={{ display: 'flex', gap: '12px' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 800 }}>
+                                   <Zap size={14} fill="currentColor"/> +{task.reward_fitcoins ?? 15} FC
+                                </span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 800 }}>
+                                   <Target size={14} /> +{task.reward_xp} XP
+                                </span>
+                             </div>
+                             
+                             {(!isCompleted && !isFailed) && (
+                                <button onClick={() => handleStartTask(task)} 
+                                   className="btn-primary"
+                                   style={{ padding: '8px 16px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                   Empezar <ChevronRight size={16} />
                                 </button>
                              )}
                           </div>
@@ -324,7 +369,7 @@ export default function MobileHome() {
                 ¡Clasificación de Carrera!
               </h2>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
-                Hola <strong style={{ color: '#fff' }}>{profile?.full_name?.split(' ')[0]}</strong>, tu nivel actual en Marathon es:
+                Hola <strong style={{ color: '#fff' }}>{profile?.full_name?.split(' ')[0]}</strong>, tu nivel actual es:
               </p>
             </div>
 
@@ -342,7 +387,7 @@ export default function MobileHome() {
             </div>
 
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
-              Tus micro-retos y simuladores de venta por IA se han adaptado automáticamente a este nivel para impulsar tu crecimiento profesional.
+              Tus rutinas y simuladores de venta por IA se han adaptado automáticamente a este nivel para impulsar tu crecimiento profesional.
             </p>
 
             <button
@@ -353,7 +398,7 @@ export default function MobileHome() {
               className="btn-primary"
               style={{ width: '100%', justifyContent: 'center', padding: '12px', borderRadius: '12px' }}
             >
-              ¡Comenzar Retos!
+              ¡Comenzar Entrenamiento!
             </button>
           </div>
         </div>
