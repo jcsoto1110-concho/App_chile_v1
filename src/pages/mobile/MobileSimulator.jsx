@@ -95,7 +95,12 @@ export default function MobileSimulator() {
 
     if (aiResponse.completed) {
       setIsCompleted(true);
-      setMessages(prev => [...prev, { sender: 'system', text: '¡Objetivo logrado! Has satisfecho los criterios de evaluación.' }]);
+      setMessages(prev => [...prev, { 
+        sender: 'system', 
+        text: aiResponse.summary 
+           ? `¡Objetivo logrado! 🎉\n\nResumen de Aprendizaje:\n${aiResponse.summary}` 
+           : '¡Objetivo logrado! Has satisfecho los criterios de evaluación.' 
+      }]);
     }
   };
 
@@ -262,16 +267,17 @@ export default function MobileSimulator() {
               <div key={i} style={{
                 alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
-                background: msg.sender === 'user' ? 'var(--accent-primary)' : msg.sender === 'system' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.6)',
-                border: msg.sender === 'system' ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                background: msg.sender === 'user' ? 'var(--accent-primary)' : msg.sender === 'system' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.6)',
+                border: msg.sender === 'system' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)',
                 padding: '12px 16px',
                 borderRadius: '16px',
                 borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
                 borderBottomLeftRadius: msg.sender === 'bot' ? '4px' : '16px',
-                color: msg.sender === 'user' ? '#000' : '#fff',
+                color: (msg.sender === 'user' || msg.sender === 'system') ? '#000' : '#fff',
                 fontWeight: msg.sender === 'user' ? 600 : 400,
                 fontSize: '0.9rem',
-                textAlign: msg.sender === 'system' ? 'center' : 'left'
+                textAlign: msg.sender === 'system' ? 'center' : 'left',
+                whiteSpace: 'pre-wrap'
               }}>
                 {msg.sender === 'system' && <strong style={{ color: 'var(--accent-primary)' }}>SISTEMA: </strong>}
                 {msg.text}

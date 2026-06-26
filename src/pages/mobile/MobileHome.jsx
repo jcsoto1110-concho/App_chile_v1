@@ -39,18 +39,12 @@ export default function MobileHome() {
        // 1. Fetch Challenges
        let chQuery = supabase.from('daily_challenges').select('*');
        if (profile?.brand_id) chQuery = chQuery.eq('brand_id', profile.brand_id);
-       if (profile?.role) chQuery = chQuery.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);
-       if (profile?.store_id) chQuery = chQuery.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
-       if (profile?.classification) chQuery = chQuery.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
-       const { data: challengesData } = await chQuery.order('created_at', { ascending: false }).limit(20);
+       const { data: challengesData } = await chQuery.order('created_at', { ascending: false }).limit(50);
 
        // 2. Fetch Simulations
-       let simQuery = supabase.from('simulations').select('*').lte('active_date', today).gte('end_date', today);
+       let simQuery = supabase.from('simulations').select('*');
        if (profile?.brand_id) simQuery = simQuery.eq('brand_id', profile.brand_id);
-       if (profile?.role) simQuery = simQuery.or(`role_target.is.null,role_target.cs.{"${profile.role.toLowerCase()}"}`);
-       if (profile?.store_id) simQuery = simQuery.or(`store_ids.is.null,store_ids.cs.{"${profile.store_id}"}`);
-       if (profile?.classification) simQuery = simQuery.or(`classification_target.eq."${profile.classification}",classification_target.is.null`);
-       const { data: simsData } = await simQuery.order('active_date', { ascending: true });
+       const { data: simsData } = await simQuery;
 
        if (profile?.id) {
            const { data: freshProfile } = await supabase.from('profiles').select('fitcoins').eq('id', profile.id).single();
@@ -85,12 +79,32 @@ export default function MobileHome() {
                setLocalFitcoins(finalCoins);
            }
 
+           // Filtering function
+           const isApplicable = (item) => {
+               // Check role
+               let roles = item.role_target || [];
+               if (typeof roles === 'string') roles = [roles];
+               if (roles.length > 0 && profile.role) {
+                   if (!roles.some(r => r.toLowerCase() === profile.role.toLowerCase())) return false;
+               }
+               // Check store
+               let stores = item.store_ids || [];
+               if (stores.length > 0 && profile.store_id) {
+                   if (!stores.includes(profile.store_id)) return false;
+               }
+               // Check classification
+               if (item.classification_target && profile.classification) {
+                   if (item.classification_target !== profile.classification) return false;
+               }
+               return true;
+           };
+
            // Assemble Training Plan
            const plan = [];
            
            // Active Challenges
            challengesData?.forEach(ch => {
-               if (!ch.end_date || ch.end_date >= today) {
+               if ((!ch.end_date || ch.end_date >= today) && isApplicable(ch)) {
                    plan.push({
                       ...ch,
                       type: 'challenge',
@@ -101,18 +115,22 @@ export default function MobileHome() {
 
            // Active Simulations
            simsData?.forEach(sim => {
-               plan.push({
-                  ...sim,
-                  type: 'simulation',
-                  status: simLog.has(sim.id) ? 'completed' : 'pending'
-               });
+               if ((!sim.end_date || sim.end_date >= today) && isApplicable(sim)) {
+                   plan.push({
+                      ...sim,
+                      type: 'simulation',
+                      status: simLog.has(sim.id) ? 'completed' : 'pending'
+                   });
+               }
            });
 
-           // Sort plan: pending first
+           // Sort plan: pending first, then by date
            plan.sort((a, b) => {
               if (a.status === 'pending' && b.status !== 'pending') return -1;
               if (a.status !== 'pending' && b.status === 'pending') return 1;
-              return new Date(b.created_at) - new Date(a.created_at);
+              const dateA = a.created_at || a.active_date || 0;
+              const dateB = b.created_at || b.active_date || 0;
+              return new Date(dateB) - new Date(dateA);
            });
 
            setTrainingPlan(plan);

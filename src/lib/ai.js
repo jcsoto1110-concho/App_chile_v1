@@ -109,7 +109,8 @@ Instrucciones:
 Formato esperado:
 {
   "reply": "Tu retroalimentación, corrección o indicación del siguiente paso para el empleado",
-  "completed": true o false
+  "completed": true o false,
+  "summary": "Si completed es true, redacta un motivador resumen de 2 líneas sobre lo que el colaborador hizo bien y el aprendizaje clave de la sesión. Si es false, envíalo vacío."
 }
 `;
 
