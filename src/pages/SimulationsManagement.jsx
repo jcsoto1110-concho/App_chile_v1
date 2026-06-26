@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2 } from 'lucide-react';
+import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateSimulationScenario } from '../lib/ai';
 import { getRoles } from '../lib/rolesConfig';
@@ -158,6 +158,21 @@ export default function SimulationsManagement() {
     }
   };
 
+  const handleReactivate = async (sim) => {
+    const newEndDate = new Date();
+    newEndDate.setDate(newEndDate.getDate() + 7);
+    const endStr = newEndDate.toISOString().split('T')[0];
+    
+    if(!confirm(`¿Deseas reactivar el simulador "${sim.title}" por 7 días más (hasta el ${endStr})?`)) return;
+
+    const { error } = await supabase.from('simulations').update({ end_date: endStr }).eq('id', sim.id);
+    if (!error) {
+       fetchSimulations();
+    } else {
+       alert("Error al reactivar: " + error.message);
+    }
+  };
+
   return (
     <>
       <div className="animate-fade-in relative">
@@ -251,7 +266,12 @@ export default function SimulationsManagement() {
                         </button>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingRight: '24px' }}>
                           <h3 style={{ fontSize: '1rem' }}>{sim.title}</h3>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
+                             <button onClick={() => handleReactivate(sim)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar por 7 días">
+                                <RefreshCw size={14} />
+                             </button>
+                          </div>
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sim.role_target} · {sim.reward_xp} XP</p>
                       </div>
@@ -273,7 +293,7 @@ export default function SimulationsManagement() {
           background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 100,
           display: 'grid', placeItems: 'center', padding: '16px'
         }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '600px', background: 'var(--bg-dark)', padding: 0, overflow: 'hidden' }}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '600px', background: 'var(--bg-dark)', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
              
              {/* Header */}
              <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between' }}>
@@ -286,7 +306,7 @@ export default function SimulationsManagement() {
              </div>
 
              {/* Body */}
-             <div style={{ padding: '24px' }}>
+             <div style={{ padding: '24px', overflowY: 'auto' }}>
                 {!generatedSim ? (
                   <form onSubmit={handleGenerate}>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>

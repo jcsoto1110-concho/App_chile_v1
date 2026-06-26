@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload } from 'lucide-react';
+import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles } from '../lib/rolesConfig';
 import { useAuth } from '../lib/AuthContext';
@@ -159,6 +159,21 @@ export default function ChallengesManagement() {
     }
   };
 
+  const handleReactivate = async (challenge) => {
+    const newEndDate = new Date();
+    newEndDate.setDate(newEndDate.getDate() + 7);
+    const endStr = newEndDate.toISOString().split('T')[0];
+    
+    if(!confirm(`¿Deseas reactivar el reto "${challenge.title}" por 7 días más (hasta el ${endStr})?`)) return;
+
+    const { error } = await supabase.from('daily_challenges').update({ end_date: endStr }).eq('id', challenge.id);
+    if (!error) {
+       fetchChallenges();
+    } else {
+       alert("Error al reactivar: " + error.message);
+    }
+  };
+
   return (
     <>
       <div className="animate-fade-in relative">
@@ -225,7 +240,12 @@ export default function ChallengesManagement() {
                       <div key={challenge.id} className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(255,0,0,0.15)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                           <h3 style={{ fontSize: '1rem', paddingRight: '8px' }}>{challenge.title}</h3>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '3px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>Venció: {challenge.end_date}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                             <span style={{ fontSize: '0.7rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '3px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>Venció: {challenge.end_date}</span>
+                             <button onClick={() => handleReactivate(challenge)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar por 7 días">
+                                <RefreshCw size={14} />
+                             </button>
+                          </div>
                         </div>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{challenge.role_target || 'Todos'} · +{challenge.reward_xp} XP · +{challenge.reward_fitcoins} FC</p>
                       </div>

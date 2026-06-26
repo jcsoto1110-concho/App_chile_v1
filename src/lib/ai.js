@@ -6,7 +6,7 @@ const isDev = import.meta.env.DEV;
 
 // Modo Local (Escritorio)
 const openai = new OpenAI({
-  apiKey: apiKey,
+  apiKey: apiKey || 'dummy-key-to-prevent-crash',
   dangerouslyAllowBrowser: true 
 });
 
