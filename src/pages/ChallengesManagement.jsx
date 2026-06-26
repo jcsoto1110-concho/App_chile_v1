@@ -33,7 +33,7 @@ export default function ChallengesManagement() {
     is_flash: false,
     is_live: false,
     classification_target: 'Challenger',
-    quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
+    quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
   });
 
   async function fetchChallenges() {
@@ -101,7 +101,7 @@ export default function ChallengesManagement() {
       is_flash: false,
       is_live: false,
       classification_target: 'Challenger',
-      quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
+      quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
     });
   };
 
@@ -117,7 +117,7 @@ export default function ChallengesManagement() {
     if (validQuestions.length > 0) {
         quizData = validQuestions.map(q => ({
             question: q.question,
-            options: [q.opt0, q.opt1, q.opt2].filter(v => v && v.trim() !== ''),
+            options: [q.opt0, q.opt1].filter(v => v && v.trim() !== ''),
             correctIndex: parseInt(q.correct)
         }));
     }
@@ -150,7 +150,7 @@ export default function ChallengesManagement() {
           title: '', description: '', content_url: '',  
           role_targets: [], store_ids: [], reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
           is_flash: false, is_live: false, classification_target: 'Challenger',
-          quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
+          quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
        });
        localStorage.removeItem('pending_challenge_form');
        fetchChallenges();
@@ -483,7 +483,7 @@ export default function ChallengesManagement() {
                   <div style={{ padding: '16px', background: 'rgba(50,50,250,0.05)', borderRadius: '12px', border: '1px solid rgba(50,100,255,0.2)', marginBottom: '16px' }}>
                      <h3 style={{ fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                         Módulo de Examen (Test Formal)
-                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
+                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
                      </h3>
                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Puedes añadir tantas preguntas como desees (Recomendado: 5). Todas deberán ser aprobadas.</p>
                      
@@ -494,10 +494,9 @@ export default function ChallengesManagement() {
                              <input className="input-field" type="text" placeholder="¿Pregunta evaluar?" value={q.question} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].question = e.target.value; setFormData({...formData, quiz_questions: newQ})}} />
                            </div>
 
-                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                               <div><input className="input-field" placeholder="Opción 0" value={q.opt0} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt0 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
                               <div><input className="input-field" placeholder="Opción 1" value={q.opt1} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt1 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
-                              <div><input className="input-field" placeholder="Opción 2" value={q.opt2} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt2 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
                            </div>
 
                            <div className="input-group" style={{ marginTop: '12px' }}>
@@ -505,7 +504,6 @@ export default function ChallengesManagement() {
                              <select className="input-field" value={q.correct} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].correct = e.target.value; setFormData({...formData, quiz_questions: newQ})}}>
                                 <option value={0}>Opción 0</option>
                                 <option value={1}>Opción 1</option>
-                                <option value={2}>Opción 2</option>
                              </select>
                            </div>
                         </div>
