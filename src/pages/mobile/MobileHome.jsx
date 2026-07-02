@@ -278,10 +278,23 @@ export default function MobileHome() {
          )}
       </div>
 
-      {/* RUTINA DEL DÍA */}
+      {/* TAREAS PENDIENTES */}
       <div style={{ padding: '0 20px 40px' }}>
+         {(() => {
+             const pendingCount = trainingPlan.filter(t => t.status === 'pending').length;
+             return pendingCount > 0 ? (
+                <div style={{ background: 'rgba(255,175,0,0.1)', border: '1px solid var(--accent-warning)', borderRadius: '12px', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <AlertTriangle size={24} color="var(--accent-warning)" />
+                    <div>
+                       <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1rem', fontWeight: 800 }}>Aviso de Tareas Pendientes</h4>
+                       <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tienes {pendingCount} misión{pendingCount !== 1 ? 'es' : ''} esperando por ti.</p>
+                    </div>
+                </div>
+             ) : null;
+         })()}
+
          <h2 style={{ fontSize: '1.2rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <Dumbbell size={20} color="var(--accent-primary)" /> Rutina del Día
+            <Target size={20} color="var(--accent-primary)" /> Retos y Simuladores
          </h2>
          
          {loading ? (
@@ -322,7 +335,7 @@ export default function MobileHome() {
                                    {isChallenge ? 'Conocimiento' : 'Práctica / Roleplay'}
                                 </span>
                                 <h4 style={{ margin: '0', fontSize: '1.05rem', lineHeight: 1.3, color: 'var(--text-main)', fontWeight: 800 }}>
-                                   Rutina {idx + 1}: {task.title}
+                                   {isChallenge ? 'Reto' : 'Simulador'}: {task.title}
                                 </h4>
                              </div>
                              

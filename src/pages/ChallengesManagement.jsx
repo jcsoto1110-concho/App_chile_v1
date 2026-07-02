@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload, RefreshCw } from 'lucide-react';
+import { Plus, Clock, Edit2, Loader2, Save, X, Trophy, Upload, RefreshCw, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getRoles } from '../lib/rolesConfig';
 import { useAuth } from '../lib/AuthContext';
@@ -33,7 +33,7 @@ export default function ChallengesManagement() {
     is_flash: false,
     is_live: false,
     classification_target: 'Challenger',
-    quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
+    quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
   });
 
   async function fetchChallenges() {
@@ -101,7 +101,7 @@ export default function ChallengesManagement() {
       is_flash: false,
       is_live: false,
       classification_target: 'Challenger',
-      quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
+      quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
     });
   };
 
@@ -117,7 +117,7 @@ export default function ChallengesManagement() {
     if (validQuestions.length > 0) {
         quizData = validQuestions.map(q => ({
             question: q.question,
-            options: [q.opt0, q.opt1].filter(v => v && v.trim() !== ''),
+            options: [q.opt0, q.opt1, q.opt2].filter(v => v && v.trim() !== ''),
             correctIndex: parseInt(q.correct)
         }));
     }
@@ -150,7 +150,7 @@ export default function ChallengesManagement() {
           title: '', description: '', content_url: '',  
           role_targets: [], store_ids: [], reward_xp: 10, reward_fitcoins: 5, active_date: todayRaw, end_date: todayRaw,
           is_flash: false, is_live: false, classification_target: 'Challenger',
-          quiz_questions: [{ question: '', opt0: '', opt1: '', correct: 0 }]
+          quiz_questions: [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]
        });
        localStorage.removeItem('pending_challenge_form');
        fetchChallenges();
@@ -164,7 +164,7 @@ export default function ChallengesManagement() {
     newEndDate.setDate(newEndDate.getDate() + 7);
     const endStr = newEndDate.toISOString().split('T')[0];
     
-    if(!confirm(`¿Deseas reactivar el reto "${challenge.title}" por 7 días más (hasta el ${endStr})?`)) return;
+    if(!confirm(`¿Deseas reactivar el reto "${challenge.title}" por 7 días más (hasta el ${endStr})? OJO: Los usuarios que ya lo completaron no podrán volver a ganarlo. Considera usar el botón Duplicar mejor.`)) return;
 
     const { error } = await supabase.from('daily_challenges').update({ end_date: endStr }).eq('id', challenge.id);
     if (!error) {
@@ -172,6 +172,37 @@ export default function ChallengesManagement() {
     } else {
        alert("Error al reactivar: " + error.message);
     }
+  };
+
+  const handleDuplicate = (challenge) => {
+     let formattedQuiz = [{ question: '', opt0: '', opt1: '', opt2: '', correct: 0 }];
+     if (challenge.quiz_data && challenge.quiz_data.length > 0) {
+        formattedQuiz = challenge.quiz_data.map(q => ({
+           question: q.question || '',
+           opt0: q.options && q.options.length > 0 ? q.options[0] : '',
+           opt1: q.options && q.options.length > 1 ? q.options[1] : '',
+           opt2: q.options && q.options.length > 2 ? q.options[2] : '',
+           correct: q.correctIndex || 0
+        }));
+     }
+
+     setFormData({
+        title: challenge.title + ' (Copia)',
+        description: challenge.description || '',
+        content_url: challenge.content_url || '',
+        role_targets: Array.isArray(challenge.role_target) ? challenge.role_target : (challenge.role_target ? [challenge.role_target] : []),
+        store_ids: challenge.store_ids || [],
+        reward_xp: challenge.reward_xp || 10,
+        reward_fitcoins: challenge.reward_fitcoins || 5,
+        active_date: todayRaw,
+        end_date: todayRaw,
+        is_flash: challenge.is_flash || false,
+        is_live: false, 
+        classification_target: challenge.classification_target || 'Challenger',
+        quiz_questions: formattedQuiz
+     });
+     
+     setIsModalOpen(true);
   };
 
   return (
@@ -221,7 +252,10 @@ export default function ChallengesManagement() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                              <Clock size={14} /> Cierre: {challenge.end_date ? new Date(challenge.end_date).toLocaleDateString() : 'N/A'}
                           </div>
-                          <button style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}><Edit2 size={16} /></button>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                             <button onClick={() => handleDuplicate(challenge)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', opacity: 0.8 }} title="Duplicar como un nuevo reto"><Copy size={16} /></button>
+                             <button style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}><Edit2 size={16} /></button>
+                          </div>
                        </div>
                     </div>
                  ))}
@@ -242,7 +276,10 @@ export default function ChallengesManagement() {
                           <h3 style={{ fontSize: '1rem', paddingRight: '8px' }}>{challenge.title}</h3>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                              <span style={{ fontSize: '0.7rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '3px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>Venció: {challenge.end_date}</span>
-                             <button onClick={() => handleReactivate(challenge)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar por 7 días">
+                             <button onClick={() => handleDuplicate(challenge)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Duplicar como un nuevo reto">
+                                <Copy size={14} />
+                             </button>
+                             <button onClick={() => handleReactivate(challenge)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar (NO RECOMENDADO si quieres dar puntos nuevos)">
                                 <RefreshCw size={14} />
                              </button>
                           </div>
@@ -483,7 +520,7 @@ export default function ChallengesManagement() {
                   <div style={{ padding: '16px', background: 'rgba(50,50,250,0.05)', borderRadius: '12px', border: '1px solid rgba(50,100,255,0.2)', marginBottom: '16px' }}>
                      <h3 style={{ fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                         Módulo de Examen (Test Formal)
-                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
+                        <button type="button" onClick={() => setFormData({...formData, quiz_questions: [...formData.quiz_questions, { question: '', opt0: '', opt1: '', opt2: '', correct: 0 }]})} style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>+ Añadir Pregunta</button>
                      </h3>
                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Puedes añadir tantas preguntas como desees (Recomendado: 5). Todas deberán ser aprobadas.</p>
                      
@@ -494,16 +531,18 @@ export default function ChallengesManagement() {
                              <input className="input-field" type="text" placeholder="¿Pregunta evaluar?" value={q.question} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].question = e.target.value; setFormData({...formData, quiz_questions: newQ})}} />
                            </div>
 
-                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                              <div><input className="input-field" placeholder="Opción 0" value={q.opt0} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt0 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
-                              <div><input className="input-field" placeholder="Opción 1" value={q.opt1} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt1 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
+                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                              <div><input className="input-field" placeholder="Opción 1" value={q.opt0} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt0 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
+                              <div><input className="input-field" placeholder="Opción 2" value={q.opt1} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt1 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
+                              <div><input className="input-field" placeholder="Opción 3 (Opcional)" value={q.opt2 || ''} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].opt2 = e.target.value; setFormData({...formData, quiz_questions: newQ})}}/></div>
                            </div>
 
                            <div className="input-group" style={{ marginTop: '12px' }}>
                              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Índice de la Opc. Correcta:</label>
                              <select className="input-field" value={q.correct} onChange={e => { const newQ = [...formData.quiz_questions]; newQ[idx].correct = e.target.value; setFormData({...formData, quiz_questions: newQ})}}>
-                                <option value={0}>Opción 0</option>
-                                <option value={1}>Opción 1</option>
+                                <option value={0}>Opción 1</option>
+                                <option value={1}>Opción 2</option>
+                                <option value={2}>Opción 3</option>
                              </select>
                            </div>
                         </div>

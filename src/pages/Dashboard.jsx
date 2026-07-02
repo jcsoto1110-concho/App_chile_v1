@@ -259,7 +259,7 @@ export default function Dashboard() {
           } finally {
             setLoading(false);
           }
-        }} className="btn-primary" style={{ background: 'var(--accent-secondary)', color: '#000' }}>
+        }} className="btn-primary" style={{ background: 'var(--accent-secondary)', color: '#fff' }}>
           <Download size={18} /> Descargar Reporte Excel
         </button>
       </div>

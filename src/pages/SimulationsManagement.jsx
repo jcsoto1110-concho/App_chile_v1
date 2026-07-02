@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Bot, Target, Sparkles, X, Loader2, Save, Trash2, RefreshCw, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateSimulationScenario } from '../lib/ai';
 import { getRoles } from '../lib/rolesConfig';
@@ -163,7 +163,7 @@ export default function SimulationsManagement() {
     newEndDate.setDate(newEndDate.getDate() + 7);
     const endStr = newEndDate.toISOString().split('T')[0];
     
-    if(!confirm(`¿Deseas reactivar el simulador "${sim.title}" por 7 días más (hasta el ${endStr})?`)) return;
+    if(!confirm(`¿Deseas reactivar el simulador "${sim.title}" por 7 días más (hasta el ${endStr})? OJO: Los usuarios que ya lo completaron no podrán volver a ganarlo. Considera usar el botón Duplicar mejor.`)) return;
 
     const { error } = await supabase.from('simulations').update({ end_date: endStr }).eq('id', sim.id);
     if (!error) {
@@ -171,6 +171,25 @@ export default function SimulationsManagement() {
     } else {
        alert("Error al reactivar: " + error.message);
     }
+  };
+
+  const handleDuplicate = (sim) => {
+     setIdeaPrompt(sim.scenario_description || sim.title);
+     setGeneratedSim({
+        title: sim.title + ' (Copia)',
+        persona: sim.ai_persona || '',
+        evaluation_criteria_arr: sim.evaluation_criteria || [],
+        xp: sim.reward_xp || 50,
+        role: sim.role_target ? (Array.isArray(sim.role_target) ? sim.role_target[0] : sim.role_target) : ''
+     });
+     setDates({
+        active_date: todayRaw,
+        end_date: todayRaw,
+        role_targets: Array.isArray(sim.role_target) ? sim.role_target : (sim.role_target ? [sim.role_target] : []),
+        store_ids: sim.store_ids || [],
+        classification_target: sim.classification_target || 'Challenger'
+     });
+     setIsModalOpen(true);
   };
 
   return (
@@ -206,14 +225,23 @@ export default function SimulationsManagement() {
               <div className="grid grid-2">
                  {active.map(sim => (
                      <div key={sim.id} className="glass-panel animate-fade-in" style={{ padding: '24px', position: 'relative' }}>
-                        <button 
-                          onClick={() => handleDelete(sim.id, sim.title)}
-                          style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,0,85,0.1)', border: '1px solid rgba(255,0,85,0.2)', color: 'var(--accent-danger)', padding: '6px', borderRadius: '8px', cursor: 'pointer', zIndex: 10 }}
-                          title="Eliminar Simulador"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', paddingRight: '36px' }}>
+                        <div style={{ position: 'absolute', top: '24px', right: '24px', display: 'flex', gap: '8px', zIndex: 10 }}>
+                           <button 
+                             onClick={() => handleDuplicate(sim)}
+                             style={{ background: 'transparent', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', padding: '6px', borderRadius: '8px', cursor: 'pointer' }}
+                             title="Duplicar Simulador"
+                           >
+                             <Copy size={16} />
+                           </button>
+                           <button 
+                             onClick={() => handleDelete(sim.id, sim.title)}
+                             style={{ background: 'rgba(255,0,85,0.1)', border: '1px solid rgba(255,0,85,0.2)', color: 'var(--accent-danger)', padding: '6px', borderRadius: '8px', cursor: 'pointer' }}
+                             title="Eliminar Simulador"
+                           >
+                             <Trash2 size={16} />
+                           </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', paddingRight: '70px' }}>
                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ width: '40px', height: '40px', background: 'rgba(112, 0, 255, 0.2)', borderRadius: '12px', display: 'grid', placeItems: 'center' }}>
                                  <Bot size={24} color="var(--accent-secondary)"/>
@@ -266,12 +294,15 @@ export default function SimulationsManagement() {
                         </button>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingRight: '24px' }}>
                           <h3 style={{ fontSize: '1rem' }}>{sim.title}</h3>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                             <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
-                             <button onClick={() => handleReactivate(sim)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar por 7 días">
-                                <RefreshCw size={14} />
-                             </button>
-                          </div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', background: 'rgba(255,0,0,0.1)', padding: '4px 8px', borderRadius: '8px' }}>Vencido: {sim.end_date}</span>
+                              <button onClick={() => handleDuplicate(sim)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Duplicar como nuevo simulador">
+                                 <Copy size={14} />
+                              </button>
+                              <button onClick={() => handleReactivate(sim)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Reactivar (NO RECOMENDADO)">
+                                 <RefreshCw size={14} />
+                              </button>
+                           </div>
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sim.role_target} · {sim.reward_xp} XP</p>
                       </div>
