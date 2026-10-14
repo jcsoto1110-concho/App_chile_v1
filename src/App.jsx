@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MobileLayout from './components/MobileLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import Dashboard from './pages/Dashboard';
 import StoreDetail from './pages/StoreDetail';
@@ -90,8 +91,10 @@ function RouterLogic() {
 
 export default function App() {
   return (
-     <AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
         <RouterLogic />
-     </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

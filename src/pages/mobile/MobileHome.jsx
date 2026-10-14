@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell, Zap, TrendingUp, Star, Dumbbell, ArrowUpCircle } from 'lucide-react';
+import { Target, ChevronRight, Loader2, Play, CheckCircle, XCircle, Bell, Zap, TrendingUp, Star, Dumbbell, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import climberImg from '../../assets/climber.png';
 
